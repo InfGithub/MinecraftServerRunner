@@ -1,24 +1,32 @@
 
+#导入模块
 import os
 import json
 import time
 import subprocess
 
+#定义Cmd指令函数
 def run_cmd( cmd_str='', echo_print=1):
-    from subprocess import run
+    from subprocess import run 
     if echo_print == 1:
         print('\nCommand="{}"'.format(cmd_str))
     run(cmd_str, shell=True)
 
-java_home=os.environ.get('JAVA_HOME')
-java_path=java_home+"bin\javaw.exe"
-java_exists=os.path.exists(java_path)
-java_get=subprocess.Popen(args=['java','--version'],shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-out,err=java_get.communicate()
-java_version=out.decode("ascii")[0:-1].split('\r')[0].split(' ')[1]
+#定义Main进程
 def main():
+
+    #声明全局变量
     global Xms,Xmx,jarcore_name,jarcore_loader,data,Version,Forcedrun
 
+    #获取Java参数
+    java_home=os.environ.get('JAVA_HOME')
+    java_path=java_home+"bin\javaw.exe"
+    java_exists=os.path.exists(java_path)
+    java_get=subprocess.Popen(args=['java','--version'],shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out,err=java_get.communicate()
+    java_version=out.decode("ascii")[0:-1].split('\r')[0].split(' ')[1]
+
+    #获取程序配置
     with open("options.json", 'r', encoding='utf-8') as file:
         data = json.load(file)
     Xms=data['Xms']
@@ -28,6 +36,7 @@ def main():
     jarcore_loader=data['jarcore_loader']
     Forcedrun=data['Forcedrun']
 
+    #获取服务器启动脚本参数
     def flp():
         global run
         Version2=int(Version.split('.')[1])
@@ -40,9 +49,9 @@ def main():
                     run="java @user_jvm_args.txt @libraries/net/minecraftforge/forge/--------/win_args.txt %*-nogui"
                 else :
                     run="pause"
-        else :
+        else :#如果Java版本不对设为Error
             run="Error"
-            
+    #定义选项函数.单次运行服务器
     def m1():
         
         def s1():
@@ -52,6 +61,7 @@ def main():
             if run!="Error":
                 run_cmd(run)
             else :
+                #Java版本错误显示
                 os.system('color 0C')
                 print("Java 版本不对！请更换正确的 Java 版本。")
                 print("Azul 下载地址：")
@@ -77,6 +87,7 @@ def main():
         choice=input('输入：')
         locals()['s'+choice]()
 
+    #定义选项函数.多次运行服务器
     def m2():
 
         def r1():
@@ -91,6 +102,7 @@ def main():
 
                 tick=int(input("次数："))
 
+                #判断重启次数
                 if tick==0:
                     main()
                 else :
@@ -113,6 +125,7 @@ def main():
                                 print(str(15-i)+'...')
                             print('服务器已启动。')
             else :
+                #Java版本错误显示
                 os.system('color 0C')
                 print("Java 版本不对！请更换正确的 Java 版本。")
                 print("Azul 下载地址：")
@@ -124,8 +137,6 @@ def main():
 
         os.system('color 0B')
         os.system('cls')
-
-        home_dir = os.environ.get('JAVA_HOME')
 
         print('-'*64)
         print(data)
@@ -139,6 +150,7 @@ def main():
         choice=input('输入：')
         locals()['r'+choice]()
 
+    #定义选项函数.修改eula
     def m3():
 
         os.system('color 0B')
@@ -150,8 +162,8 @@ def main():
         os.system('pause')
         main()
 
+    #定义选项函数.修改配置
     def m4():
-
         def o1():
             global Xms
             os.system('cls')
@@ -270,7 +282,7 @@ def main():
         choice=input('输入：')
 
         locals()['o'+choice]()
-
+    #定义选项函数.检测运行环境
     def m5():
 
         os.system('color 0A')
@@ -285,6 +297,7 @@ def main():
         print('-'*64)
         flp()
         if run=="Error":
+            #Java版本错误显示
             os.system('color 0C')
             print("Java 版本不对！请更换正确的 Java 版本。")
             print("Azul 下载地址：")
@@ -294,7 +307,7 @@ def main():
         os.system('pause')
 
         main()
-
+    #定义选项函数.关闭程序
     def m6():
 
         os.system('color 0D')
