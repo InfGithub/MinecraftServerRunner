@@ -5,7 +5,7 @@ import time
 import subprocess
 
 def run_cmd( cmd_str='', echo_print=1):
-    from subprocess import run
+    from subprocess import run 
     if echo_print == 1:
         print('\nCommand="{}"'.format(cmd_str))
     run(cmd_str, shell=True)
@@ -36,7 +36,7 @@ def main():
             if jarcore_loader=='Vanilla' or jarcore_loader=='Fabric' or jarcore_loader=='Quilt' or (Version2<17 and (jarcore_loader=='Forge' or jarcore_loader=='Neoforge')):
                 run="java -server -Xms{}G -Xmx{}G -jar {} nogui".format(Xms,Xmx,jarcore_name)
             else :
-                if (jarcore_loader=='Forge' or jarcore_loader=='Neoforge') and Version2.split('.')[2]>=17 :
+                if (jarcore_loader=='Forge' or jarcore_loader=='Neoforge') and Version2>=17 :
                     run="java @user_jvm_args.txt @libraries/net/minecraftforge/forge/--------/win_args.txt %*-nogui"
                 else :
                     run="pause"
