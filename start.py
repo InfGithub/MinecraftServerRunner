@@ -41,7 +41,7 @@ def main():
         global run
         Version2=int(Version.split('.')[1])
         java_version1=int(java_version.split('.')[0])
-        if (Version2<=17 and java_version1==8) or (Version2>16 and Version2<21 and java_version1==17) or (Version2>20 and java_version1==21) or Forcedrun=='True':
+        if (Version2<=17 and java_version1==8) or (Version2>16 and Version2<21 and java_version1==17) or (Version2>20 and java_version1==21) or Forcedrun:
             if jarcore_loader=='Vanilla' or jarcore_loader=='Fabric' or jarcore_loader=='Quilt' or (Version2<17 and (jarcore_loader=='Forge' or jarcore_loader=='Neoforge')):
                 run="java -server -Xms{}G -Xmx{}G -jar {} nogui".format(Xms,Xmx,jarcore_name)
             else :

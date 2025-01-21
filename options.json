@@ -4,5 +4,5 @@
     "jarcore_name": "fabric-server-1.20.1-0.16.10.jar",
     "jarcore_loader": "Fabric",
     "Version": "1.20.1",
-    "Forcedrun": "True"
+    "Forcedrun": true
 }
