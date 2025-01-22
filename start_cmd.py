@@ -15,7 +15,6 @@ class MCServerRunner:
         java_get=sp.Popen(args=['java','--version'],shell=True,stdout=sp.PIPE, stderr=sp.PIPE)
         out,err=java_get.communicate()
         self.java_ver=out.decode("ascii")[0:-1].split('\r')[0].split(' ')[1]
-        self.flp()
 
         #获取程序配置
         with open("options.json", 'r', encoding='utf-8') as file:
@@ -27,6 +26,7 @@ class MCServerRunner:
         self.jarcore_loader=self.data['jarcore_loader']
         self.Forcedrun=self.data['Forcedrun']
 
+        self.flp()
         #命令行参数传入
         self.cmd_parse()
 
@@ -47,7 +47,7 @@ class MCServerRunner:
 
     def cmd_parse(self):
         parser=ap.ArgumentParser(description='MinecraftServerRunner帮助列表')
-        parser.add_argument('-e','--env',dest='env',action='store_true',default=False,help='检测服务器运行环境。')
+        parser.add_argument('--env',dest='env',action='store_true',default=False,help='检测服务器运行环境。')
         parser.add_argument('-rm','--remove',dest='rm',action='store_true',default=False,help='运行结束后删除生成的文件。')
         rungroup=parser.add_argument_group('启动服务器命令组')
         rungroup.add_argument('-s','--start',dest='start',action='store_true',default=False,help='启动服务器。')
@@ -86,7 +86,7 @@ class MCServerRunner:
                 with open('eula.txt','w') as file:
                     file.write('eula=true\n')
                 print('eula.txt 已修改。')
-            elif self.cfg:
+            elif args.cfg:
                 self.data[args.cfg]=args.val if args.cfg in ('jarcore_name','jarcore_loader','Version') else int(args.val) if args.cfg in ('Xms','Xmx') else True if 'true' in args.val.lower() else False
                 with open('options.json','w',encoding='utf-8') as file:
                     file.write(json.dumps(self.data, indent=4))
@@ -100,7 +100,7 @@ class MCServerRunner:
                     os.remove(p)
                 elif os.path.isdir(p):
                     shutil.rmtree(p)
-                    
+
     def run_cmd(self, cmd_str='', echo_print=1):
         '''定义cmd指令函数'''
         if echo_print == 1:
