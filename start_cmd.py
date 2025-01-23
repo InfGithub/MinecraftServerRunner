@@ -37,11 +37,10 @@ class MCServerRunner:
         if (ver2<=17 and java_ver1==8) or (16 <ver2 <21 and java_ver1==17) or (ver2>20 and java_ver1==21) or self.Forcedrun:
             if self.jarcore_loader in ('Vanilla','Fabric','Quilt') or (ver2<17 and (self.jarcore_loader in ('Forge','Neoforge'))):
                 self.cmd = f"java -server -Xms{self.Xms}G -Xmx{self.Xmx}G -jar {self.jarcore_name} nogui"
+            elif (self.jarcore_loader in ('Forge','Neoforge')) and ver2>=17 :
+                self.cmd="java @user_jvm_args.txt @libraries/net/minecraftforge/forge/--------/win_args.txt %*-nogui"
             else:
-                if (self.jarcore_loader in ('Forge','Neoforge')) and ver2>=17 :
-                    self.cmd="java @user_jvm_args.txt @libraries/net/minecraftforge/forge/--------/win_args.txt %*-nogui"
-                else:
-                    self.cmd="pause"
+                self.cmd="pause"
         else: # 如果Java版本有误设为False
             self.cmd=False
 
@@ -57,39 +56,39 @@ class MCServerRunner:
         changegroup.add_argument('-c','--config',dest='cfg',default=None,choices=['Xms','Xmx','jarcore_name','jarcore_loader','Version','Forcedrun'],help='修改启动配置')
         changegroup.add_argument('-v','--value',dest='val',default=None,type=str,help='options.json配置对应的值。')
         args=parser.parse_args()
-        if self.Forcedrun or self.cmd:
+        if self.cmd:
             if args.env:
                 print("JAVA_HOME ："+self.java_home)
                 print("JAVA_path ："+self.java_path)
                 print("java_version ："+self.java_ver)
-            elif args.rm:
+            if args.eula:
+                with open('eula.txt','w') as file:
+                    file.write('eula=true\n')
+                print('eula.txt 已修改。')
+            if args.cfg:
+                self.data[args.cfg]=args.val if args.cfg in ('jarcore_name','jarcore_loader','Version') else int(args.val) if args.cfg in ('Xms','Xmx') else True if 'true' in args.val.lower() else False
+                with open('options.json','w',encoding='utf-8') as file:
+                    file.write(json.dumps(self.data, indent=4))
+            if args.rm:
                 self.rm_svfiles()
-            elif args.start:
+            if args.start:
                 print('直接关闭程序后服务器有可能不会关闭，请手动在任务管理器关闭或提前输入stop命令。\n(Neo)Forge加载器需要自己手动设置启动脚本，且其不会被程序配置影响，需要手动调整。')
                 if args.rstimes:
                     fortick=65536 if args.rstimes==-1 else args.rstimes
                     for t in range(fortick):
                         os.system('cls')
-                        os.system('title Times {}'.format(t+1))
+                        os.system(f'title Times {t+1}')
                         self.run_cmd(self.cmd)
                         print("服务器已关闭。")
                         if t!=(fortick-1):
-                            print("时间：{}".format(time.asctime()))
-                            print("15秒后重启......")
+                            print(f"时间：{time.asctime()}")
+                            print("15秒后重启...")
                             for i in range(16):
                                 time.sleep(1)
                                 print(str(15-i)+'...')
                             print('服务器已启动。')
                 else:
                     self.run_cmd(self.cmd)
-            elif args.eula:
-                with open('eula.txt','w') as file:
-                    file.write('eula=true\n')
-                print('eula.txt 已修改。')
-            elif args.cfg:
-                self.data[args.cfg]=args.val if args.cfg in ('jarcore_name','jarcore_loader','Version') else int(args.val) if args.cfg in ('Xms','Xmx') else True if 'true' in args.val.lower() else False
-                with open('options.json','w',encoding='utf-8') as file:
-                    file.write(json.dumps(self.data, indent=4))
         else:
             print("Java 版本有误！请更换正确的 Java 版本。\nAzul 下载地址：\nhttps://www.azul.com/downloads/")
 
@@ -104,7 +103,7 @@ class MCServerRunner:
     def run_cmd(self, cmd_str='', echo_print=1):
         '''定义cmd指令函数'''
         if echo_print == 1:
-            print('\nCommand="{}"'.format(cmd_str))
+            print(f'\nCommand="{cmd_str}"')
         sp.run(cmd_str, shell=True)
 
 if __name__=='__main__':
