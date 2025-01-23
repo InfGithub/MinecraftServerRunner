@@ -97,7 +97,7 @@ class MCServerRunner:
             if os.path.exists(p):
                 if os.path.isfile(p):
                     os.remove(p)
-                elif os.path.isdir(p):
+                if os.path.isdir(p):
                     shutil.rmtree(p)
 
     def run_cmd(self, cmd_str='', echo_print=1):
