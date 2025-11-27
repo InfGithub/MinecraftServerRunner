@@ -1,8 +1,28 @@
 {
-    "Xms": 1,
-    "Xmx": 1,
-    "jarcore_name": "fabric-server-1.20.1-0.16.10.jar",
-    "jarcore_loader": "Fabric",
-    "Version": "1.20.1",
-    "Forcedrun": true
+  "min_memory": 8,
+  "max_memory": 16,
+  "jar_name": "server.jar",
+  "version": "1.20.1",
+  "loader": "Fabric",
+  "jdk_path": null,
+  "allow_force_run": true,
+  "allow_force_reboot": false,
+  "reboot_time": 10,
+  "jvm_args": {
+    "server": true,
+    "XX_UseG1GC": true,
+    "XX_DisableExplicitGC": true,
+    "XX_AlwaysPreTouch": true,
+    "XX_ParallelRefProcEnabled": true,
+    "XX_UseStringDeduplication": true,
+    "XX_UnlockExperimentalVMOptions": true,
+    "XX_TieredCompilation": true,
+    "XX_UseCompressedOops": true,
+    "XX_UseCompressedClassPointers": true,
+    "XX_MaxGCPauseMillis": 130,
+    "XX_G1HeapRegionSize": 16,
+    "XX_MetaspaceSize": 256,
+    "XX_MaxMetaspaceSize": 512,
+    "Xmn": 3
+  }
 }
