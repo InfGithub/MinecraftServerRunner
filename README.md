@@ -54,3 +54,7 @@ python start.py
   - 性能调优选项
 - **跨平台支持**: Windows & Linux
 - **强制模式**: 绕过版本检测强制运行
+
+## 参与贡献
+
+欢迎提交 **Issue** 和 **Pull Request** ！
