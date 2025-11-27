@@ -3,6 +3,8 @@
 ## 描述
 这是一个用于启动 **Minecraft Java版** 服务器的 **Python** 程序。
 
+![License](https://img.shields.io/badge/License-MIT-blue.svg)
+
 ## 注意事项
 1. 请下载与服务器版本对应的 `JDK` ，推荐[Azul](https://www.azul.com/downloads/)。
 2. 请将 `JDK` 添加到 **系统环境变量** 。如是使用 `Azul` ，安装时勾选全部服务即可一键设置环境变量。
