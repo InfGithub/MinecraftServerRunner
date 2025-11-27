@@ -5,7 +5,7 @@ from time import sleep
 from typing import Tuple, Dict, List, Union, TypedDict, Callable, Any
 import sys, subprocess
 
-Loaders: List[str] = ["Vanilla", "Fabric", "Quilt", "Forge", "NeoForge"]
+loaders: List[str] = ["Vanilla", "Fabric", "Quilt", "Forge", "NeoForge"]
 
 string = """\
  __  __   ___   ___                            ___
@@ -71,7 +71,7 @@ default_settings: SettingsType = {
     "jvm_args": {}
 }
 
-JVM_Args_Info: Dict[str, JVMArgsInfoType] = {
+jvm_args_info: Dict[str, JVMArgsInfoType] = {
     "Xmn": {"type": "memory_gb", "desc": "新生代内存大小", "default": None},
     "server": {"type": "switch", "desc": "服务器模式JIT", "default": None},
     "XX_UseG1GC": {"type": "switch", "desc": "G1垃圾回收器", "default": None},
@@ -97,7 +97,7 @@ JVM_Args_Info: Dict[str, JVMArgsInfoType] = {
     "XX_UseCompressedClassPointers": {"type": "switch", "desc": "压缩类指针", "default": None},
 }
 
-JVM_Args_Mapping: Dict[str, Callable] = {
+jvm_args_mapping: Dict[str, Callable] = {
     "Xmn": lambda v: f"-Xmn{v}G",
     "server": lambda v: "-server",
     "XX_UseG1GC": lambda v: "-XX:+UseG1GC",
@@ -123,18 +123,18 @@ JVM_Args_Mapping: Dict[str, Callable] = {
     "XX_UseCompressedClassPointers": lambda v: "-XX:+UseCompressedClassPointers",
 }
 
-def GetJVMargs(data: SettingsType) -> str:
+def get_jvm_args(data: SettingsType) -> str:
     args: List = list()
     for key, value in data["jvm_args"].items():
-        if key in JVM_Args_Mapping:
-            if JVM_Args_Info[key]["type"] == "switch":
+        if key in jvm_args_mapping:
+            if jvm_args_info[key]["type"] == "switch":
                 if value:
-                    args.append(JVM_Args_Mapping[key](value))
+                    args.append(jvm_args_mapping[key](value))
             else:
-                args.append(JVM_Args_Mapping[key](value))
+                args.append(jvm_args_mapping[key](value))
     return " ".join(args)
 
-def GenerateRecommendedJVMArgs(data: SettingsType) -> JVMArgsType:
+def generate_recommended_jvm_args(data: SettingsType) -> JVMArgsType:
     avg_memory: int = (data["min_memory"] + data["max_memory"]) // 2
     
     recommended: Dict[str, bool] = {
@@ -195,7 +195,7 @@ def title(string: str) -> int:
     except:
         return 1
 
-def EULA_write() -> Tuple[int, Union[Exception, None]]:
+def eula_write() -> Tuple[int, Union[Exception, None]]:
     try:
         with open("eula.txt", mode="w", encoding="utf-8") as f:
             f.write("eula=true")
@@ -203,7 +203,7 @@ def EULA_write() -> Tuple[int, Union[Exception, None]]:
     except Exception as e:
         return 1, e
 
-def Settings_read() -> Tuple[int, Union[Exception, str, SettingsType, None]]:
+def settings_read() -> Tuple[int, Union[Exception, str, SettingsType, None]]:
     try:
         with open("settings.json", mode="r", encoding="utf-8") as f:
             text = f.read()
@@ -212,7 +212,7 @@ def Settings_read() -> Tuple[int, Union[Exception, str, SettingsType, None]]:
     except Exception as e:
         return 1, e
 
-def Settings_write(data: SettingsType) -> Tuple[int, Union[Exception, None]]:
+def settings_write(data: SettingsType) -> Tuple[int, Union[Exception, None]]:
     try:
         with open("settings.json", mode="w", encoding="utf-8") as f:
             f.write(dumps(data, indent=4))
@@ -220,21 +220,21 @@ def Settings_write(data: SettingsType) -> Tuple[int, Union[Exception, None]]:
     except Exception as e:
         return 1, e
 
-def get_javaexepath(data: SettingsType) -> str:
+def get_java_path(data: SettingsType) -> str:
     if data["jdk_path"] is None:
         return "java"
     else:
         java_exe = "bin/java.exe" if sys.platform == "win32" else "bin/java"
         return f"\"{normpath(join(data["jdk_path"], java_exe))}\""
 
-def Allow_run(data: SettingsType) -> Tuple[int, Union[Exception, str, None]]:
+def allow_run(data: SettingsType) -> Tuple[int, Union[Exception, str, None]]:
     if data["allow_force_run"]:
         return 0, None
 
     try:
         version = tuple([int(i) for i in data["version"].split(".")])
         out, _ = subprocess.Popen(
-            args=[get_javaexepath(data), "--version"],
+            args=[get_java_path(data), "--version"],
             shell=True, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE).communicate()
         outs = out.decode("ascii")
@@ -251,14 +251,14 @@ def Allow_run(data: SettingsType) -> Tuple[int, Union[Exception, str, None]]:
     else:
         return 1, "JdkVersionError"
 
-def GetCommand(data: SettingsType) -> Tuple[int, Union[str, Exception]]:
+def get_command(data: SettingsType) -> Tuple[int, Union[str, Exception]]:
     version = tuple([int(i) for i in data["version"].split(".")])
     if data["loader"] in ["Vanilla", "Fabric", "Quilt"] or (data["loader"] == "Forge" and (1, 16, 5) >= version):
-        return 0, f"{get_javaexepath(data)} -jar -Xms{data["min_memory"]}G -Xmx{data["max_memory"]}G {GetJVMargs(data)} {data["jar_name"]} nogui"
+        return 0, f"{get_java_path(data)} -jar -Xms{data["min_memory"]}G -Xmx{data["max_memory"]}G {get_jvm_args(data)} {data["jar_name"]} nogui"
     else:
         if data["loader"] == "Forge":
             try:
-                return 0, f"{get_javaexepath(data)} -Xms{data["min_memory"]}G -Xmx{data["max_memory"]}G {GetJVMargs(data)} @libraries/net/minecraftforge/forge/{list(walk("./libraries/net/minecraftforge/forge/"))[0][1][0]}/ %* nogui"
+                return 0, f"{get_java_path(data)} -Xms{data["min_memory"]}G -Xmx{data["max_memory"]}G {get_jvm_args(data)} @libraries/net/minecraftforge/forge/{list(walk("./libraries/net/minecraftforge/forge/"))[0][1][0]}/ %* nogui"
             except IndexError as e:
                 return 1, f"ForgeDirectoryError - {e}"
             except Exception as e:
@@ -287,7 +287,7 @@ def get_recommended_value(key: str, data: SettingsType) -> Any:
         "XX_MetaspaceSize": 256,
         "XX_MaxMetaspaceSize": 512 if avg_memory <= 16 else 1024,
     }
-    return recommendations.get(key, JVM_Args_Info.get(key, {}).get("default"))
+    return recommendations.get(key, jvm_args_info.get(key, {}).get("default"))
 
 def handle_jvm_arg_input(config: Dict) -> Any:
     print(f"配置 {config["key"]} | {config["description"]}")
@@ -337,12 +337,12 @@ def show_jvm_args_config(data: SettingsType):
         print("[2] 一键生成推荐配置")
         lined()
         
-        args_list = list(JVM_Args_Info.keys())
+        args_list = list(jvm_args_info.keys())
         for i, key in enumerate(args_list, 3):
             current = data["jvm_args"].get(key)
-            desc = JVM_Args_Info[key]["desc"]
+            desc = jvm_args_info[key]["desc"]
             
-            if JVM_Args_Info[key]["type"] == "switch":
+            if jvm_args_info[key]["type"] == "switch":
                 if current is True:
                     display_value = "启用"
                 elif current is False:
@@ -369,10 +369,10 @@ def show_jvm_args_config(data: SettingsType):
         elif choice == "2":
             print("一键生成推荐JVM参数配置")
             lined()
-            recommended = GenerateRecommendedJVMArgs(data)
+            recommended = get_recommended_value(data)
             print("推荐的JVM参数配置：")
             for k, v in recommended.items():
-                if JVM_Args_Info[k]["type"] == "switch":
+                if jvm_args_info[k]["type"] == "switch":
                     print(f"  - {k}: {"启用" if v is True else "未启用"}")
                 else:
                     print(f"  - {k}: {v}")
@@ -391,15 +391,15 @@ def show_jvm_args_config(data: SettingsType):
                     key = args_list[choice_num - 3]
                     config = {
                         "key": key,
-                        "description": JVM_Args_Info[key]["desc"],
-                        "type": JVM_Args_Info[key]["type"],
+                        "description": jvm_args_info[key]["desc"],
+                        "type": jvm_args_info[key]["type"],
                         "current_value": data["jvm_args"].get(key),
                         "recommended_value": get_recommended_value(key, data)
                     }
-                    if "range" in JVM_Args_Info[key]:
-                        config["range"] = JVM_Args_Info[key]["range"]
-                    if "options" in JVM_Args_Info[key]:
-                        config["options"] = JVM_Args_Info[key]["options"]
+                    if "range" in jvm_args_info[key]:
+                        config["range"] = jvm_args_info[key]["range"]
+                    if "options" in jvm_args_info[key]:
+                        config["options"] = jvm_args_info[key]["options"]
                     
                     result = handle_jvm_arg_input(config)
                     
@@ -407,7 +407,7 @@ def show_jvm_args_config(data: SettingsType):
                         print("操作取消")
                     elif result == "INVALID":
                         print("输入值无效，请检查数据类型和范围")
-                    elif JVM_Args_Info[key]["type"] == "switch":
+                    elif jvm_args_info[key]["type"] == "switch":
                         if result is True:
                             data["jvm_args"][key] = True
                             print(f"{key} 已启用")
@@ -445,7 +445,7 @@ def main() -> int:
         lined()
 
         if value == "0":
-            result = Settings_read()
+            result = settings_read()
             if result[0] == 0:
                 data = result[1]
             else:
@@ -453,8 +453,8 @@ def main() -> int:
                 print(f"配置文件读取失败，已返回默认值。错误信息：'{result[1]}'")
                 lined()
             
-            allow = Allow_run(data)
-            command = GetCommand(data)
+            allow = allow_run(data)
+            command = get_command(data)
             if allow[0] == 0 and command[0] == 0:
                 print("服务器环境正常。")
                 print("服务器启动命令：")
@@ -488,7 +488,7 @@ def main() -> int:
                 lined()
                 
         elif value == "1":
-            result = Settings_read()
+            result = settings_read()
             if result[0] == 0:
                 data = result[1]
             else:
@@ -496,8 +496,8 @@ def main() -> int:
                 print(f"配置文件读取失败，已返回默认值。错误信息：'{result[1]}'")
                 lined()
             
-            allow = Allow_run(data)
-            command = GetCommand(data)
+            allow = allow_run(data)
+            command = get_command(data)
             if allow[0] == 0 and command[0] == 0:
                 print("服务器环境正常。")
                 print("服务器启动命令：")
@@ -564,7 +564,7 @@ def main() -> int:
             print("请先阅读并同意此协议：https://aka.ms/MinecraftEULA")
             value = input("输入Y(Yes)即代表您同意此协议：")
             if value.upper() == "Y":
-                result = EULA_write()
+                result = eula_write()
                 if result[0] == 0:
                     print("EULA协议修改成功！")
                 else:
@@ -572,7 +572,7 @@ def main() -> int:
             lined()
             
         elif value == "3":
-            result = Settings_read()
+            result = settings_read()
             if result[0] == 0:
                 data = result[1]
             else:
@@ -638,13 +638,13 @@ def main() -> int:
                     print("配置模组加载器")
                     print(f"原模组加载器：{data["loader"]}")
                     lined()
-                    for i, loader in enumerate(Loaders):
+                    for i, loader in enumerate(loaders):
                         print(f"[{i}] {loader}")
                     value = input("请选择将修改的加载器：")
                     if value.isdigit():
                         int_value = int(value)
-                        if 0 <= int_value < len(Loaders):
-                            data["loader"] = Loaders[int_value]
+                        if 0 <= int_value < len(loaders):
+                            data["loader"] = loaders[int_value]
                             print("模组加载器修改成功！")
                         else:
                             print("模组加载器修改失败，请检查索引范围。")
@@ -716,7 +716,7 @@ def main() -> int:
                 elif value == "9":
                     show_jvm_args_config(data)
                 else:
-                    result = Settings_write(data)
+                    result = settings_write(data)
                     if result[0] != 0:
                         print(f"配置文件修改失败，错误信息：'{result[1]}'")
                         lined()
