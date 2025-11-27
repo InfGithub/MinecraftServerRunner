@@ -13,7 +13,7 @@
 
 ## 启动程序
 ```bash
-python startv2.py
+python start.py
 ```
 
 ## 配置文件
