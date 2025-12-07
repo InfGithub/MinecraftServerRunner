@@ -234,7 +234,7 @@ def allow_run(data: SettingsType) -> Tuple[int, Union[Exception, str, None]]:
     try:
         version = tuple([int(i) for i in data["version"].split(".")])
         out, _ = subprocess.Popen(
-            args=[get_java_path(data), "--version"],
+            args=[get_java_path(data).strip("\""), "--version"],
             shell=True, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE).communicate()
         outs = out.decode("ascii")
@@ -246,7 +246,7 @@ def allow_run(data: SettingsType) -> Tuple[int, Union[Exception, str, None]]:
     if  ((1, 9, 0) > jdk_version >= (1, 8, 0) and (1, 16, 5) >= version) or \
         ((1, 12, 0) > jdk_version >= (1, 11, 0) and (1, 17, 1) >= version >= (1, 13, 0)) or \
         ((1, 18, 0) > jdk_version >= (1, 17, 0) and (1, 20, 4) >= version >= (1, 17, 0)) or \
-        ((1, 22, 0) > jdk_version >= (1, 21, 0) and version >= (1, 20, 5)):
+        (jdk_version >= (1, 21, 0) and version >= (1, 20, 5)):
         return 0, None
     else:
         return 1, "JdkVersionError"
