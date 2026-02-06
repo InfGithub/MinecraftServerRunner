@@ -32,7 +32,7 @@ python start_inline.py
     "version": "1.20.1", // Minecraft游戏版本
     "loader": "Fabric", // 模组加载器: Vanilla, Fabric, Quilt, Forge, NeoForge
     "jdk_path": "java", // JDK安装路径
-    "reboot_time": 10, // 重启等待时间（秒）
+    "reboot_seconds": 10, // 重启等待时间（秒）
     "jvm_args": {
         // 高级JVM参数配置
         "server": true,
