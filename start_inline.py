@@ -689,6 +689,7 @@ class ServerStream(Page):
         command_args: list[str] = self.generate_command()
 
         tick: int = 0
+        self.running: bool = True
         while True:
 
             title(F"Reboot time: {tick}")
@@ -727,10 +728,13 @@ class ServerStream(Page):
             self.line()
             self.print(f"服务器已关闭，返回代码：{process.returncode}")
 
+            self.line()
             if tick == self.running_cf_data["reboot_time"]:
                 break
 
-            self.line()
+            if not self.running:
+                break
+
             try:
                 for sec in range(self.server_cf_data["reboot_seconds"], 0, -1):
                     self.print(f"重启倒计时：{sec}s")
@@ -738,6 +742,7 @@ class ServerStream(Page):
 
             except KeyboardInterrupt:
                 break
+        self.running: bool = False
 
     def output_stream(self, proc: Popen[str]):
         while proc.poll() is None:
@@ -765,7 +770,8 @@ class ServerStream(Page):
                     proc.stdin.flush()
 
                     if check_stop_command(std_input):
-                        break
+                        self.running: bool = False
+
                 except (BrokenPipeError, OSError):
                     break
 
