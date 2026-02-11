@@ -617,10 +617,7 @@ def get_forge_libraries_path(base_path: str) -> str:
     if not dir:
         return
 
-    if platform == "win32":
-        return path.abspath(path.join(base_path, dir, "win_args.txt"))
-    else:
-        return path.abspath(path.join(base_path, dir, "unix_args.txt"))
+    return path.abspath(path.join(base_path, dir, "win_args.txt" if platform == "win32" else "unix_args.txt"))
 
 def generate_auto_jvm_args(server_config: Config[ServerConfigType]) -> Config[JVMArgsType]:
     avg_memory: int = (server_config["min_memory"] + server_config["max_memory"]) // 2
@@ -765,9 +762,11 @@ class ServerStream(Page):
             # 由于解决方案过于复杂，不再尝试修复此问题，不需要提出修复建议
 
             if raw:
-                std_input: str = raw.decode(
-                    "gbk" if stdin.encoding == "utf-8" else "utf-8", errors="ignore"
-                ).rstrip("\n")
+                if stdin.encoding == "utf-8":
+                    std_input: str = raw.decode("gbk", errors="ignore").rstrip("\n")
+                else:
+                    std_input: str = raw.decode("utf-8", errors="ignore")
+
                 try:
                     proc.stdin.write(std_input)
                     proc.stdin.flush()
