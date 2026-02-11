@@ -589,38 +589,23 @@ def generate_jvm_args(config: Config[JVMArgsType]) -> list[str]:
                     args.append(f"-{key.replace("_", ":")}={value}m")
     return args
 
-def get_forge_libraries_path(base_path: str = "./libraries/net/minecraftforge/forge") -> str:
+def get_forge_libraries_path(base_path: str) -> str:
+    _path: str = path.abspath(base_path)
 
-    if not path.isdir(base_path):
+    if not path.isdir(_path):
         return None
 
-    latest_dir: str = None
-    latest_version: tuple[int, int, int] = (-1, -1, -1)
+    dir: str = None
+    for dir_name in listdir(_path):
+        dir: str = dir_name
 
-    for dir_name in listdir(base_path):
-        dir_path: str = path.join(base_path, dir_name)
-        if not path.isdir(dir_path):
-            continue
+    if not dir:
+        return
 
-        version_parts: list[str] = dir_name.split("-")
-        if len(version_parts) < 2:
-            continue
-
-        forge_version_str: str = version_parts[1]
-        forge_version_nums: list[int] = list()
-        for part in forge_version_str.split("."):
-            forge_version_nums.append(int(part) if part.isdigit() else 0)
-
-        while len(forge_version_nums) < 3:
-            forge_version_nums.append(0)
-
-        current_version: tuple[int, int, int] = tuple(forge_version_nums)  # type: ignore
-
-        if current_version > latest_version:
-            latest_dir = dir_path
-            latest_version = current_version
-
-    return latest_dir
+    if platform == "win32":
+        return path.abspath(path.join(base_path, dir, "win_args.txt"))
+    else:
+        return path.abspath(path.join(base_path, dir, "unix_args.txt"))
 
 def generate_auto_jvm_args(server_config: Config[ServerConfigType]) -> Config[JVMArgsType]:
     avg_memory: int = (server_config["min_memory"] + server_config["max_memory"]) // 2
@@ -781,22 +766,30 @@ class ServerStream(Page):
         match self.server_cf_data["loader"]:
             case "Vanilla" | "Fabric" | "Quilt":
                 pass
-            case "Forge":
+            case "Forge" | "NeoForge":
                 version: tuple[int, int, int] = tuple([int(item) for item in self.server_cf_data["version"].split(".")])
 
                 if (1, 17, 0) > version:
                     pass
                 else:
-                    forge_libraries_path: str = get_forge_libraries_path()
+                    forge_libraries_path: str = None
+
+                    if self.server_cf_data["loader"] == "Forge":
+                        forge_libraries_path: str = get_forge_libraries_path(
+                            "./libraries/net/minecraftforge/forge"
+                        )
+                    elif self.server_cf_data["loader"] == "NeoForge":
+                        forge_libraries_path: str = get_forge_libraries_path(
+                            "./libraries/net/neoforged/neoforge"
+                        )
                     if not forge_libraries_path is None:
+                        forge_libraries_path: str = "@" + forge_libraries_path
                         args: list[str] = [
                             get_java_exe_path(self.server_cf_data["jdk_path"]),
                             f"-Xmx{self.server_cf_data["max_memory"]}G",
                             f"-Xms{self.server_cf_data["min_memory"]}G",
                             *generate_jvm_args(self.server_cf_data["jvm_args"]),
-                            "-jar",
-                            self.server_cf_data["jar_name"],
-                            forge_libraries_path.replace(".", "@"),
+                            forge_libraries_path,
                             "%*",
                             "nogui"
                         ]
