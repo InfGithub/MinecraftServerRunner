@@ -712,14 +712,13 @@ class ServerStream(Page):
 
             self.line()
             self.print(f"服务器已关闭，返回代码：{process.returncode}")
-
-            self.line()
             if tick == self.running_cf_data["reboot_time"]:
                 break
 
             if not self.running:
                 break
 
+            self.line()
             try:
                 for sec in range(self.server_cf_data["reboot_seconds"], 0, -1):
                     self.print(f"重启倒计时：{sec}s")
