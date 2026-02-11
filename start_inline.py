@@ -2,7 +2,7 @@ from os import path, environ, listdir, system
 from sys import stdout, stderr, stdin, platform
 from json import dumps, loads, JSONDecodeError
 from time import sleep
-from typing import Any, Literal, TypedDict, TypeVar, Dict, Generic, Callable, Unpack
+from typing import Any, Literal, TypedDict, TypeVar, Dict, Generic, Unpack, Callable
 from threading import Thread
 from subprocess import Popen, PIPE
 
@@ -25,9 +25,9 @@ def rebuild(cls, obj):
             config[key] = rebuild(cls, value)
         return config
     elif isinstance(obj, list):
-        return [rebuild(item) for item in obj]
+        return [rebuild(cls, item) for item in obj]
     elif isinstance(obj, tuple):
-        return tuple(rebuild(item) for item in obj)
+        return tuple(rebuild(cls, item) for item in obj)
     else:
         return obj
 
@@ -300,7 +300,7 @@ class Choose(Page):
 				var.do()
 			else:
 				if self.value_mapping:
-					if var in self.value_mapping: # 提供映射表以映射值
+					if value in self.value_mapping: # 提供映射表以映射值
 						var = self.value_mapping[var]
 				self.config.set(self.config_key, var)
 				if self.end_line:
@@ -712,6 +712,7 @@ class ServerStream(Page):
 
             self.line()
             self.print(f"服务器已关闭，返回代码：{process.returncode}")
+
             if tick == self.running_cf_data["reboot_time"]:
                 break
 
@@ -840,9 +841,9 @@ running_config: Config[RunningType] = Config[RunningType]({
 	"reboot_time": 1
 })
 
-title("Minecraft Server Runner v2.2 InLine Version")
+title("Minecraft Server Runner v2.2")
 InfoList(
-	description="Minecraft Server Runner v2.2 InLine Version\tAuthor: Inf",
+	description="Minecraft Server Runner v2.2\tAuthor: Inf",
 	texts=[
 		R" __  __   ___   ___                            ___",
 		R"|  \/  | / __| / __| ___  _ _ __ __ ___  _ _  | _ \ _  _  _ _   _ _   ___  _ _",
@@ -899,7 +900,7 @@ jvm_args_info: dict[str, dict] = {
     "Xmn": {"type": "int", "desc": "新生代内存大小（GB）"},
     "server": {"type": "bool", "desc": "服务器模式JIT"},
     "XX_UseG1GC": {"type": "bool", "desc": "G1垃圾回收器"},
-    "XX_MaxGCPauseMillis": {"type": " int", "desc": "最大GC暂停时间", "prompt": "取值范围：50~1000", "default": 130},
+    "XX_MaxGCPauseMillis": {"type": "int", "desc": "最大GC暂停时间", "prompt": "取值范围：50~1000", "default": 130},
     "XX_G1HeapRegionSize": {"type": "choose", "desc": "G1堆区域大小", "data": [1, 2, 4, 8, 16, 32], "default": 16},
     "XX_MetaspaceSize": {"type": "int", "desc": "元空间初始大小", "default": 256},
     "XX_MaxMetaspaceSize": {"type": "int", "desc": "元空间最大大小", "default": 512},
