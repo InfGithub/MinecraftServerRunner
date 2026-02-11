@@ -301,7 +301,7 @@ class Choose(Page):
 			else:
 				if self.value_mapping:
 					if value in self.value_mapping: # 提供映射表以映射值
-						var = self.value_mapping[var]
+						var = self.value_mapping[value]
 				self.config.set(self.config_key, var)
 				if self.end_line:
 					self.line()
