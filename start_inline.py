@@ -745,17 +745,21 @@ class ServerStream(Page):
 
     def input_stream(self, proc: Popen[str]):
         while proc.poll() is None:
-            std_input: str = stdin.readline()
+            raw: bytes = stdin.buffer.readline()
             # 唯一遗憾，若强杀进程会导致线程堵塞，线程卡在内核等输入，新线程抢不到输入，代价是多按一次Enter，坑爹！
             # 由于解决方案过于复杂，不再尝试修复此问题，不需要提出修复建议
 
-            if std_input:
+            if raw:
+                std_input: str = raw.decode(
+                    "gbk" if stdin.encoding == "utf-8" else "utf-8", errors="ignore"
+                ).rstrip("\n")
                 try:
                     proc.stdin.write(std_input)
                     proc.stdin.flush()
 
                     if check_stop_command(std_input):
                         self.running: bool = False
+                        break
 
                 except (BrokenPipeError, OSError):
                     break
