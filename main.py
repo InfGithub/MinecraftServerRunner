@@ -31,6 +31,9 @@ def run_server():
 	running_config["reboot_time"] = 1
 	multi_run_server()
 
+def replace_jvm_args_config_auto():
+	server_config["jvm_args"] = generate_auto_jvm_args(server_config)
+
 # ----------------------------------------------------------------
 
 run_server_ui: InfoList = InfoList(
@@ -59,11 +62,6 @@ eula_ui: InfoList = InfoList(
 	enable_exit_prompt=True,
 	complete_call_function=write_eula,
 )
-
-# ----------------------------------------------------------------
-
-def replace_jvm_args_config_auto():
-	server_config["jvm_args"] = generate_auto_jvm_args(server_config)
 
 # ----------------------------------------------------------------
 
@@ -179,9 +177,10 @@ clean_ui: InputSet = InputSet(
 	config_key="clean_type",
 	data_type="int",
 	display_current_value=False,
-	complete_call_function=lambda: clean(
-		running_config["clean_type"]
-	)
+	base_color="red"
+)
+clean_ui.complete_call_function = lambda: clean(
+	running_config["clean_type"], clean_ui.print
 )
 
 # ----------------------------------------------------------------

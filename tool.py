@@ -1,6 +1,6 @@
 from os import remove, path
 from shutil import rmtree
-from typing import Literal
+from typing import Literal, Callable
 
 caches: list[str] = [
     "__pycache__/",
@@ -32,6 +32,7 @@ resets: list[str] = vasts + [
 
 def clean(
     dtype: Literal[0, 1, 2] = 0,
+    print_function: Callable = print
 ):
     if dtype == 0:
         data_list = caches
@@ -52,7 +53,7 @@ def clean(
             else:
                 remove(name)
 
-                print(f"删除：{name}")
+                print_function(f"删除：{name}")
 
         except Exception as e:
-                print(f"异常：{e}")
+                print_function(f"异常：{e}")

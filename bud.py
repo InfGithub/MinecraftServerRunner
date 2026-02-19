@@ -65,7 +65,7 @@ tree = ast.parse(code)
 transformer = FromImportNodeTransformer(file_names)
 transformer.visit(tree)
 
-imports = sorted(transformer.from_imports.items(), key=lambda x: len(x[0]))
+imports = sorted(transformer.from_imports.items(), key=lambda x: len(x[0]), reverse=True)
 
 for key, item in imports:
     module = item["module"]
