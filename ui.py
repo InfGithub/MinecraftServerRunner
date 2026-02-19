@@ -3,6 +3,8 @@ from util import Config, Color, colorize, ColorArgs
 
 type InputSetAllowedType = Literal["int", "str", "bool"]
 
+# ----------------------------------------------------------------
+
 class Page:
 	def __init__(self, base_color: Color | list[Color] = "", error_color: Color = "red"):
 		if isinstance(base_color, str):
@@ -26,6 +28,8 @@ class Page:
 	def input(self, prompt: str) -> str:
 		self.print(prompt, end="")
 		return input()
+
+# ----------------------------------------------------------------
 
 class Choose(Page):
 	def __init__(
@@ -130,14 +134,16 @@ class Choose(Page):
 				var.do()
 			else:
 				if self.value_mapping:
-					if var in self.value_mapping: # 提供映射表以映射值
-						var = self.value_mapping[var]
+					if value in self.value_mapping: # 提供映射表以映射值
+						var = self.value_mapping[value]
 				self.config.set(self.config_key, var)
 				if self.end_line:
 					self.line()
 				self.print(f"修改成功，已退出此页面。")
 				self.line()
 				return
+
+# ----------------------------------------------------------------
 
 class InputSet(Page):
 	def __init__(
