@@ -15,7 +15,7 @@
 ## 启动程序
 
 ```bash
-python start_inline.py
+python start.py
 ```
 
 ## 配置文件
