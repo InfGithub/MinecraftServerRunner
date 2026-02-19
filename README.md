@@ -72,11 +72,6 @@ python start.py
 -   **跨平台支持**: Windows & Linux
 -   **强制模式**: 绕过版本检测强制运行
 
-## 其他事项
-
--   **start.py** 已被废弃，请使用新版内联后的 **start_inline.py**！
--   由于是手动 **内联** ，此版本无法 **维护** ，模块版请查看 **/src/** 目录！
-
 ## 参与贡献
 
 欢迎提交 **Issue** 和 **Pull Request**！
