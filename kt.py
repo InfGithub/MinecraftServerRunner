@@ -1,6 +1,6 @@
 from threading import Thread
 from typing import Any
-from ctypes import Structure, c_wchar, WinDLL, byref
+from ctypes import Structure, c_wchar, byref
 from time import sleep
 from sys import platform
 
@@ -8,7 +8,7 @@ from sys import platform
 
 try:
     if platform == "win32":
-        from ctypes import wintypes
+        from ctypes import wintypes, WinDLL
         from ctypes import pythonapi, c_long, py_object
 
         class KEY_EVENT_RECORD(Structure):
