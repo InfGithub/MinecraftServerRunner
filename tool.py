@@ -59,27 +59,23 @@ def clean(
         except Exception as e:
             print_function(f"异常：{e}")
 
-def check_network(encodeing: Literal["ascii", "gbk"] = "gbk") -> list[str]:
+def check_network(encoding: Literal["ascii", "gbk"] = "gbk") -> list[str]:
     try:
         if platform == "win32":
-            output = check_output("ipconfig", shell=True, text=True, encoding=encodeing)
-            result = output.split("\n")
+            return check_output(
+                "ipconfig", shell=True, text=True, encoding=encoding
+            ).splitlines()
  
         elif platform == "unix":
             try:
-                output = check_output("ifconfig", shell=True, text=True)
+                return check_output("ifconfig", shell=True, text=True).splitlines()
             except:
-                output = check_output("ip addr", shell=True, text=True)
-
-            result = output.split("\n")
+                return check_output("ip addr", shell=True, text=True).splitlines()
 
     except CalledProcessError as e:
-        result = [f"执行命令失败: {e}"]
+        return [f"执行命令失败: {e}"]
     except Exception as e:
-        result = [f"获取网络信息出错: {e}"]
-
-    return result
-
+        return [f"获取网络信息出错: {e}"]
 
 def write_eula():
 	try:
