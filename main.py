@@ -207,15 +207,11 @@ tool_ui: Choose = Choose(
 
 # ----------------------------------------------------------------
 
-ver: str = "v2.3"
-
-# ----------------------------------------------------------------
-
 if __name__ == "__main__":
 
-	title(f"Minecraft Server Runner {ver}")
+	title(f"Minecraft Server Runner")
 	InfoList(
-		description=f"Minecraft Server Runner {ver}\tAuthor: Inf",
+		description=f"Minecraft Server Runner\tAuthor: Inf",
 		texts=[
 			R" __  __   ___   ___                            ___",
 			R"|  \/  | / __| / __| ___  _ _ __ __ ___  _ _  | _ \ _  _  _ _   _ _   ___  _ _",
