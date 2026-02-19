@@ -42,6 +42,7 @@ files = (
     "ui.py",
     "kt.py",
     "expand.py",
+    "tool.py",
     "main.py"
 )
 
@@ -90,7 +91,8 @@ ast.fix_missing_locations(tree)
 # ----------------------------------------------------------------
 
 code = ast.unparse(tree)
-code = black.format_str(code, mode=black.Mode())
+header = f"# Auto-generated {output} by bud.py\n# Source files: {', '.join(files)}\n\n" 
+code = black.format_str(header + code, mode=black.Mode())
 
 with open(output, mode="w", encoding="utf-8") as f:
     f.write(code)

@@ -6,6 +6,7 @@ from expand import (
 	title, get_env, generate_auto_jvm_args, write_eula,
 	ServerConfigType, RunningType, ServerStream
 )
+from tool import clean
 
 # ----------------------------------------------------------------
 
@@ -171,6 +172,32 @@ env_ui: InfoList = InfoList(
 	call_function=lambda: get_env(server_config.data)
 )
 
+clean_ui: InputSet = InputSet(
+	description="选择清理等级",
+	prompt="[0] 日志+缓存 [1] 日志+临时数据 [2] 重置",
+	config=running_config,
+	config_key="clean_type",
+	data_type="int",
+	display_current_value=False,
+	complete_call_function=lambda: clean(
+		running_config["clean_type"]
+	)
+)
+
+# ----------------------------------------------------------------
+
+tool_ui: Choose = Choose(
+	description="选择要执行的功能",
+	text=[
+		"检测运行环境",
+		"清理文件数据"
+	],
+	data=[
+		env_ui,
+		clean_ui
+	]
+)
+
 # ----------------------------------------------------------------
 
 ver: str = "v2.3"
@@ -197,14 +224,14 @@ if __name__ == "__main__":
 			"启动服务器（自动重启）",
 			"修改EULA协议",
 			"修改启动配置",
-			"检测运行环境",
+			"工具箱"
 		],
 		data=[
 			run_server_ui,
 			multi_run_server_ui,
 			eula_ui,
 			config_ui,
-			env_ui
+			tool_ui
 		],
 		description="请选择将要使用的功能。",
 		base_color="blue"
