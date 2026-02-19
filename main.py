@@ -3,10 +3,10 @@ from util import Config
 from expand import (
 	loaders, default_server_config,
 	default_running_config, jvm_args_info,
-	title, get_env, generate_auto_jvm_args, write_eula,
+	title, get_env, generate_auto_jvm_args,
 	ServerConfigType, RunningType, ServerStream
 )
-from tool import clean
+from tool import clean, check_network, write_eula
 
 # ----------------------------------------------------------------
 
@@ -52,15 +52,6 @@ multi_run_server_ui: InputSet = InputSet(
 	data_type="int",
 	complete_call_function=multi_run_server,
 	display_current_value=False
-)
-
-# ----------------------------------------------------------------
-
-eula_ui: InfoList = InfoList(
-	description="再次按下任意键，以修改eula.txt。",
-	texts=["继续前，请先阅读并同意此协议：https://aka.ms/MinecraftEULA"],
-	enable_exit_prompt=True,
-	complete_call_function=write_eula,
 )
 
 # ----------------------------------------------------------------
@@ -183,17 +174,34 @@ clean_ui.complete_call_function = lambda: clean(
 	running_config["clean_type"], clean_ui.print
 )
 
+net_ui: InfoList = InfoList(
+	description="网络信息",
+	call_function=lambda: check_network(),
+	base_color="magenta"
+)
+
+eula_ui: InfoList = InfoList(
+	description="再次按下任意键，以修改eula.txt。",
+	texts=["继续前，请先阅读并同意此协议：https://aka.ms/MinecraftEULA"],
+	enable_exit_prompt=True,
+	complete_call_function=write_eula,
+)
+
 # ----------------------------------------------------------------
 
 tool_ui: Choose = Choose(
 	description="选择要执行的功能",
 	text=[
 		"检测运行环境",
-		"清理文件数据"
+		"清理文件数据",
+		"查看网络信息",
+		"修改EULA协议"
 	],
 	data=[
 		env_ui,
-		clean_ui
+		clean_ui,
+		net_ui,
+		eula_ui
 	]
 )
 
@@ -221,14 +229,12 @@ if __name__ == "__main__":
 		text=[
 			"启动服务器",
 			"启动服务器（自动重启）",
-			"修改EULA协议",
 			"修改启动配置",
 			"工具箱"
 		],
 		data=[
 			run_server_ui,
 			multi_run_server_ui,
-			eula_ui,
 			config_ui,
 			tool_ui
 		],

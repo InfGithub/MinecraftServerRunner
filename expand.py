@@ -126,13 +126,6 @@ def title(string: str):
     else:
         print(f"\033]0;{string}\007", end="", flush=True)
 
-def write_eula():
-	try:
-		with open("eula.txt", mode="w", encoding="utf-8") as f:
-			f.write("#INF.\neula=true")
-	except:
-		pass
-
 # ----------------------------------------------------------------
 
 def get_java_exe_path(jdk_path: str) -> str:
