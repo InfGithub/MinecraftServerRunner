@@ -18,3 +18,4 @@ server.properties
 test.py
 usercache.json
 whitelist.json
+start.py
