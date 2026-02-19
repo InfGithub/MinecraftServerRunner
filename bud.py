@@ -10,6 +10,9 @@ class FromImportNodeTransformer(ast.NodeTransformer):
         module = node.module
         level = node.level
 
+        if node.col_offset > 0:
+            return node
+
         if module in self.file_names:
             return
 
