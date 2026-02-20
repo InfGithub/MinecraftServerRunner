@@ -211,7 +211,7 @@ if __name__ == "__main__":
 
 	title(f"Minecraft Server Runner")
 	InfoList(
-		description=f"Minecraft Server Runner\tAuthor: Inf",
+		description=f"Minecraft Server Runner | Author: Inf",
 		texts=[
 			R" __  __   ___   ___                            ___",
 			R"|  \/  | / __| / __| ___  _ _ __ __ ___  _ _  | _ \ _  _  _ _   _ _   ___  _ _",
