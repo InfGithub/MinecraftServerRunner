@@ -29,6 +29,17 @@ class Page:
 		self.print(prompt, end="")
 		return input()
 
+	# def print_exc_decorator(self, func: Callable) -> Callable:
+	# 	@wraps(func)
+	# 	def wrapper():
+	# 		a, b = func()
+	# 		if a:
+	# 			self.print(f"异常：{b}", is_error=True)
+	# 			self.line()
+	# 			return
+	# 		return b
+	# 	return wrapper
+
 # ----------------------------------------------------------------
 
 class Choose(Page):
@@ -66,8 +77,6 @@ class Choose(Page):
 			self.current_value_key: str = self.config_key
 
 	def do(self):
-		self.print(f"{self.description}")
-		self.line()
 
 		tips: list[str] = list()
 		if self.prompt:
@@ -77,17 +86,19 @@ class Choose(Page):
 		if not self.current_value_key is None:
 			tips.append(f"当前值：{self.config[self.current_value_key]}")
 
-		if tips:
-			for text in tips:
-				self.print(text)
+		while True:
+			self.print(f"{self.description}")
 			self.line()
 
-		for index, item in enumerate(self.text):
-			self.print(f"[{index}] {item}")
+			if tips:
+				for text in tips:
+					self.print(text)
+				self.line()
 
-		self.line()
+			for index, item in enumerate(self.text):
+				self.print(f"[{index}] {item}")
+			self.line()
 
-		while True:
 			try:
 				result: str = self.input("输入：")
 			except KeyboardInterrupt as err:
@@ -177,8 +188,6 @@ class InputSet(Page):
 			self.current_value_key: str = self.config_key
 
 	def do(self):
-		self.print(f"{self.description}")
-		self.line()
 
 		tips: list[str] = list()
 		if self.prompt:
@@ -192,12 +201,17 @@ class InputSet(Page):
 		if not self.default is None:
 			tips.append(f"输入为空时使用默认值：{self.default}。")
 
-		if tips:
-			for text in tips:
-				self.print(text)
-			self.line()
+
 
 		while True:
+			self.print(f"{self.description}")
+			self.line()
+
+			if tips:
+				for text in tips:
+					self.print(text)
+				self.line()
+
 			try:
 				result: str = self.input("输入：")
 			except KeyboardInterrupt as err:
@@ -206,7 +220,9 @@ class InputSet(Page):
 				if self.callback:
 					if self.exit_call_function:
 						self.exit_call_function()
+					self.line()
 					self.print(f"已退出此页面。")
+					self.line()
 					return
 				else:
 					self.line()
@@ -291,8 +307,9 @@ class InfoList(Page):
 				self.line()
 		try:
 			self.input("按下任意键以继续。")
+			self.line()
 			if self.complete_call_function:
 				self.complete_call_function()
 		except KeyboardInterrupt as err:
 			print()
-		self.line()
+			self.line()

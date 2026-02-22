@@ -3,13 +3,16 @@ from sys import platform
 from shutil import rmtree
 from typing import Literal, Callable
 from subprocess import check_output, CalledProcessError
+from util import Config
 
 caches: list[str] = [
     "__pycache__/",
     "logs/",
+    "debug/"
     "dynamic-data-pack-cache/",
     "usercache.json",
-    "mods/.connector/"
+    "mods/.connector/",
+    "usernamecache.json"
 ]
 
 vasts: list[str] = caches + [
@@ -34,7 +37,8 @@ resets: list[str] = vasts + [
 
 def clean(
     dtype: Literal[0, 1, 2] = 0,
-    print_function: Callable = print
+    print_function: Callable = print,
+    complete_function: Callable = None
 ):
     if dtype == 0:
         data_list = caches
@@ -59,6 +63,9 @@ def clean(
         except Exception as e:
             print_function(f"异常：{e}")
 
+    if complete_function:
+        complete_function()
+
 def check_network(encoding: Literal["ascii", "gbk"] = "gbk") -> list[str]:
     try:
         if platform == "win32":
@@ -66,7 +73,7 @@ def check_network(encoding: Literal["ascii", "gbk"] = "gbk") -> list[str]:
                 "ipconfig", shell=True, text=True, encoding=encoding
             ).splitlines()
  
-        elif platform == "unix":
+        else:
             try:
                 return check_output("ifconfig", shell=True, text=True).splitlines()
             except:
@@ -78,8 +85,91 @@ def check_network(encoding: Literal["ascii", "gbk"] = "gbk") -> list[str]:
         return [f"获取网络信息出错: {e}"]
 
 def write_eula():
-	try:
-		with open("eula.txt", mode="w", encoding="utf-8") as f:
-			f.write("#INF.\neula=true")
-	except:
-		pass
+    try:
+        with open("eula.txt", mode="w", encoding="utf-8") as f:
+            f.write("#INF.\neula=true")
+    except:
+        return
+
+def string_is_float(string: str) -> bool:
+    if not "." in string:
+        return False
+    if not string.count(".") == 1:
+        return False
+
+    alpha, beta = string.split(".")
+
+    anumber: str = alpha[1:] if alpha.startswith("-") else alpha
+
+    if not anumber:
+        pass
+    elif not anumber.isdigit():
+        return False
+    if not beta:
+        pass
+    elif not beta.isdigit():
+        return False
+
+    return True
+
+def load_properties(file_path: str = "server.properties") -> Config:
+    properties: dict = dict()
+
+    if not path.exists(file_path):
+        return
+
+    try:
+        with open(file_path, mode="r", encoding="utf-8") as f:
+            text: list[str] = f.readlines()
+    except:
+        return
+
+    for line in text:
+
+        string: str = line.strip()
+
+        if string.startswith("#"):
+            continue
+        if string.startswith("="):
+            continue
+        if not "=" in string:
+            continue
+
+
+        alpha, *beta = string.split("=")
+        beta: str = beta[0] if len(beta) == 1 else "=".join(beta)
+
+        if beta == "":
+            beta = None
+        elif beta.isdigit():
+            beta = int(beta)
+        elif beta == "true":
+            beta = True
+        elif beta == "false":
+            beta = False
+        elif string_is_float(beta):
+            beta = float(beta)
+
+        properties[alpha] = beta
+
+    return Config(properties)
+
+def save_properties(config: Config, file_path: str = "server.properties"):
+    text: list[str] = list()
+
+    for key, value in config.items():
+        if value is None:
+            text.append(f"{key}=\n")
+        elif isinstance(value, bool):
+            text.append(f"{key}={"true" if value else "false"}\n")
+        elif isinstance(value, int):
+            text.append(f"{key}={value}\n")
+        elif isinstance(value, float):
+            text.append(f"{key}={value}\n")
+        elif isinstance(value, str):
+            text.append(f"{key}={value}\n")
+    try:
+        with open(file_path, mode="w", encoding="utf-8") as f:
+            f.writelines(text)
+    except Exception as err:
+        return

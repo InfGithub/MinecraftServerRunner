@@ -44,7 +44,7 @@ files = (
     "util.py",
     "ui.py",
     "kt.py",
-    "expand.py",
+    "core.py",
     "tool.py",
     "main.py"
 )

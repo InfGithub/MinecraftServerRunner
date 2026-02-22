@@ -1,12 +1,16 @@
 from ui import InfoList, Choose, InputSet, Page
 from util import Config
-from expand import (
+from core import (
 	loaders, default_server_config,
 	default_running_config, jvm_args_info,
 	title, get_env, generate_auto_jvm_args,
 	ServerConfigType, RunningType, ServerStream
 )
-from tool import clean, check_network, write_eula
+from tool import clean, check_network, write_eula, load_properties
+
+# ----------------------------------------------------------------
+
+default_running_config["properties"] = load_properties()
 
 # ----------------------------------------------------------------
 
@@ -91,6 +95,7 @@ for key, value in jvm_args_info.items():
 				prompt="\n".join(prompt)
 			)
 		)
+
 key_max_length: int = max([len(key) for key in jvm_args_info.keys()])
 
 # ----------------------------------------------------------------
@@ -158,7 +163,10 @@ config_ui: Choose = Choose(
 
 env_ui: InfoList = InfoList(
 	description="运行环境信息。",
-	call_function=lambda: get_env(server_config.data)
+	call_function=lambda: get_env(
+		server_config.data,
+		running_config.data
+	)
 )
 
 clean_ui: InputSet = InputSet(
@@ -171,7 +179,9 @@ clean_ui: InputSet = InputSet(
 	base_color="red"
 )
 clean_ui.complete_call_function = lambda: clean(
-	running_config["clean_type"], clean_ui.print
+	running_config["clean_type"],
+	print_function=clean_ui.print,
+	complete_function=clean_ui.line
 )
 
 net_ui: InfoList = InfoList(
@@ -184,8 +194,9 @@ eula_ui: InfoList = InfoList(
 	description="再次按下任意键，以修改eula.txt。",
 	texts=["继续前，请先阅读并同意此协议：https://aka.ms/MinecraftEULA"],
 	enable_exit_prompt=True,
-	complete_call_function=write_eula,
 )
+eula_ui.complete_call_function=write_eula
+
 
 # ----------------------------------------------------------------
 

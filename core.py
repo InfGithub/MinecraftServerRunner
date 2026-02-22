@@ -2,12 +2,12 @@ from ui import Page, InfoList
 from util import ColorArgs, Config
 from kt import KillableThread
 
-from os import path, environ, listdir, system
+from os import path, environ, listdir, system, mkdir, remove
 from sys import stdout, stderr, stdin, platform
-from time import sleep
+from time import sleep, strftime
 from typing import Unpack, TypedDict, Literal
 from shutil import which
-from threading import Thread
+from threading import Thread, Event
 from subprocess import Popen, PIPE
 
 # ----------------------------------------------------------------
@@ -46,6 +46,12 @@ class JVMArgsType(TypedDict, total=False):
     XX_UseCompressedOops: bool
     XX_UseCompressedClassPointers: bool
 
+class BackupSettings(TypedDict):
+    enable: bool
+    backup_time: list[str]
+    backup_max: int
+    backup_path: str
+
 class ServerConfigType(TypedDict):
     min_memory: int
     max_memory: int
@@ -54,40 +60,57 @@ class ServerConfigType(TypedDict):
     loader: Literal["Vanilla", "Fabric", "Forge", "NeoForge", "Quilt"]
     jdk_path: str
     reboot_seconds: int
-    jvm_args: Config[JVMArgsType]
+    jvm_args: JVMArgsType
+    backup_settings: BackupSettings
 
 class RunningType(TypedDict):
     reboot_time: int
+    schedule_installed: bool
+    properties: dict
 
 # ----------------------------------------------------------------
 
 loaders: list[str] = ["Vanilla", "Fabric", "Forge", "NeoForge", "Quilt"]
 
 default_server_config: ServerConfigType = {
-	"jdk_path": "java",
-	"jar_name": "server.jar",
-	"min_memory": 4,
-	"max_memory": 4,
-	"loader": "Fabric",
-	"version": "1.20.1",
-	"reboot_seconds": 10,
-	"jvm_args": Config[JVMArgsType]({
-		"server": True,
-		"XX_UseG1GC": True,
-		"XX_DisableExplicitGC": True,
-		"XX_AlwaysPreTouch": True,
-		"XX_ParallelRefProcEnabled": True,
-		"XX_UseStringDeduplication": True,
-		"XX_UnlockExperimentalVMOptions": True,
-		"XX_TieredCompilation": True,
-		"XX_UseCompressedOops": True,
-		"XX_UseCompressedClassPointers": True
-	})
+    "jdk_path": "java",
+    "jar_name": "server.jar",
+    "min_memory": 4,
+    "max_memory": 4,
+    "loader": "Fabric",
+    "version": "1.20.1",
+    "reboot_seconds": 10,
+    "jvm_args": Config[JVMArgsType]({
+        "server": True,
+        "XX_UseG1GC": True,
+        "XX_DisableExplicitGC": True,
+        "XX_AlwaysPreTouch": True,
+        "XX_ParallelRefProcEnabled": True,
+        "XX_UseStringDeduplication": True,
+        "XX_UnlockExperimentalVMOptions": True,
+        "XX_TieredCompilation": True,
+        "XX_UseCompressedOops": True,
+        "XX_UseCompressedClassPointers": True
+    }),
+    "backup_settings": Config[JVMArgsType]({
+        "enable": False,
+        "backup_time": ["04:00:00"],
+        "backup_max": 5,
+        "backup_path": "backup/"
+    })
 }
 
 default_running_config: RunningType = {
-	"reboot_time": 1
+    "reboot_time": 1
 }
+
+try:
+    from schedule import run_pending, every
+    from tarfile import open as taropen
+    default_running_config["schedule_installed"] = True
+
+except ImportError:
+    default_running_config["schedule_installed"] = False
 
 jvm_args_info: dict[str, dict] = {
     "Xmn": {"type": "int", "desc": "新生代内存大小（GB）"},
@@ -146,7 +169,7 @@ def get_jdk_version(jdk_path: str) -> tuple[int, int, int]:
 
     if not path.exists(release):
         return
-    
+
     with open(release, mode="r", encoding="utf-8") as f:
         data: list[str] = f.readlines()
 
@@ -174,27 +197,30 @@ def check_jdk_version(server_data: ServerConfigType) -> str:
 
     return text
 
-def get_env(server_data: ServerConfigType) -> list[str]:
-	result: list[str] = list()
+def get_env(server_data: ServerConfigType, running_data: RunningType) -> list[str]:
+    result: list[str] = list()
 
-	java_home: str = environ.get("JAVA_HOME")
-	out, err = Popen(
+    java_home: str = environ.get("JAVA_HOME")
+    out, err = Popen(
         args=[get_java_exe_path(server_data["jdk_path"]), "--version"],
         shell=True,
-		stdout=PIPE,
+        stdout=PIPE,
         stderr=PIPE,
-		text=True,
-		bufsize=1,
-		universal_newlines=True
-	).communicate()
+        text=True,
+        bufsize=1,
+        universal_newlines=True
+    ).communicate()
 
-	if java_home:
-		result.append(f"JAVA_HOME：{java_home.strip()}")
-	if out:
-		result.append(out.strip())
-	if err:
-		result.append(err.strip())
-	return result
+    if java_home:
+        result.append(f"JAVA_HOME：{java_home.strip()}")
+    if out:
+        result.append(out.strip())
+    if err:
+        result.append(err.strip())
+    if not running_data:
+        result.append("'schedule'模块未安装，建议运行 'pip install schedule' 命令以使用备份功能。")
+
+    return result
 
 # ----------------------------------------------------------------
 
@@ -296,12 +322,17 @@ class ServerStream(Page):
 
         command_args: list[str] = self.generate_command()
 
-        tick: int = 0
+        self.tick: int = 0
         self.running: bool = True
+        self.checking_backup: bool = (
+            self.running_cf_data["schedule_installed"] and
+            self.server_cf_data["backup_settings"]["enable"]
+        )
+        self.backup_event: Event = Event()
 
         while True:
-
-            title(F"Reboot time: {tick}")
+            self.backup_event.clear()
+            title(F"Reboot time: {self.tick}")
 
             process: Popen[str] = Popen(
                 command_args,
@@ -313,7 +344,6 @@ class ServerStream(Page):
                 universal_newlines=True
             )
 
-            self.line()
             self.print(f"启动命令：{" ".join(command_args)}")
             self.print(f"服务器已启动，进程PID：{process.pid}")
 
@@ -324,26 +354,33 @@ class ServerStream(Page):
             Thread(
                 target=lambda: self.error_stream(process), daemon=True
             ).start()
-            input_thread = KillableThread(
+            input_thread: KillableThread = KillableThread(
                 target=lambda: self.input_stream(process), daemon=True
             ) # 注意注意！此处不会影响任何的系统安全！请细心审查！
             input_thread.start()
+            Thread(
+                target=lambda: self.checking_backup_thread(process), daemon=True
+            ).start()
 
             try:
                 process.wait()
             except KeyboardInterrupt as e:
                 process.terminate()
                 process.wait(timeout=10)
-            tick += 1
 
             self.line()
             self.print(f"服务器已关闭，返回代码：{process.returncode}") # 此处不换行有特殊逻辑，正常
 
+            self.line()
             self.check_return_code(process.returncode)
+
+            if self.checking_backup:
+                self.backup_event.wait()
+
             if input_thread.is_alive():
                 input_thread.KILLLL()
 
-            if tick == self.running_cf_data["reboot_time"]:
+            if self.tick == self.running_cf_data["reboot_time"]:
                 break
 
             if not self.running:
@@ -363,6 +400,12 @@ class ServerStream(Page):
         match code:
             case 130:
                 self.running: bool = False
+                self.checking_backup: bool = False
+            case 0:
+                pass
+            case _:
+                if self.checking_backup:
+                    self.backup_event.set()
 
     def output_stream(self, proc: Popen[str]):
         while proc.poll() is None:
@@ -409,12 +452,16 @@ class ServerStream(Page):
             proc.stdin.flush()
 
             self.running: bool = False
+            self.backup_event.set()
             return "break"
 
         if text in ["reboot", "/reboot"]:
             proc.stdin.write("stop\n")
             proc.stdin.flush()
-            return "break"
+
+            self.tick -= 1
+            self.backup_event.set()
+            return "break-reboot"
 
         proc.stdin.write(stdin)
         proc.stdin.flush()
@@ -463,3 +510,66 @@ class ServerStream(Page):
                 "nogui"
             ]
         return args
+
+    def backup_at_running(self, proc: Popen[str]):
+        if not self.running:
+            return
+
+        self.tick -= 1
+        proc.stdin.write("stop\n")
+        proc.stdin.flush()
+        proc.wait()
+
+        self.backup() # 备份操作
+        self.print("备份已完成。")
+        self.line()
+
+        self.backup_event.set()
+
+    def checking_backup_thread(self, proc: Popen[str]):
+        if not self.checking_backup:
+            return
+
+        for backup_time in self.server_cf_data["backup_settings"]["backup_time"]:
+            try:
+                every().day.at(backup_time).do(lambda: self.backup_at_running(proc))
+            except Exception as err:
+                self.print(f"⚠ 备份时间格式错误：{backup_time}，应为 HH:MM 或 HH:MM:SS")
+                self.line()
+                return
+
+        while self.checking_backup and proc.poll() is None:
+            run_pending()
+            sleep(1)
+
+    def backup(self):
+        backup_settings: BackupSettings = self.server_cf_data["backup_settings"]
+        properties: dict = self.running_cf_data["properties"]
+
+        if not path.exists(backup_settings["backup_path"]):
+            mkdir(backup_settings["backup_path"])
+
+        world_name: str = properties["level-name"]
+        files: list[str] = sorted(listdir(backup_settings["backup_path"]))
+
+        if len(files) >= backup_settings["backup_max"]:
+            file_path: str = path.join(backup_settings["backup_path"], files[0])
+            try:
+                remove(file_path)
+                self.print(f"已删除文件：{file_path}")
+                self.line()
+            except Exception as e:
+                self.print(f"异常：{e}")
+
+        try:
+            with taropen(
+                path.join(
+                    backup_settings["backup_path"],
+                    f"{world_name}{strftime("%Y%m%d_%H%M%S")}.tar.gz"
+                ),
+                mode="w:gz"
+            ) as f:
+                f.add(world_name, arcname=world_name)
+        except Exception as e:
+            self.print(f"异常：{e}")
+            self.line()
