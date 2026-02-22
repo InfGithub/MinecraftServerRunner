@@ -461,7 +461,7 @@ class ServerStream(Page):
 
             self.tick -= 1
             self.backup_event.set()
-            return "break-reboot"
+            return "break"
 
         proc.stdin.write(stdin)
         proc.stdin.flush()
