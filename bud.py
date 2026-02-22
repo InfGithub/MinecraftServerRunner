@@ -38,6 +38,26 @@ class FromImportNodeTransformer(ast.NodeTransformer):
             "names": imported_names,
         }
 
+class IfVisitor(ast.NodeVisitor):
+    def __init__(self):
+        self.ifs = list()
+    def visit_If(self, node):
+        if not isinstance(node.test, ast.Compare):
+            return
+        if not isinstance(node.test.left, ast.Name):
+            return
+        if not node.test.left.id == "__name__":
+            return
+        self.ifs.append(node)
+
+class IfTransformer(ast.NodeTransformer):
+    def __init__(self, ifs):
+        self.ifs = set(ifs[:-1])
+    def visit_If(self, node):
+        if node in self.ifs:
+            return None
+        return node
+
 # ----------------------------------------------------------------
 
 files = (
@@ -88,6 +108,12 @@ for key, item in imports:
     )
 
     tree.body.insert(0, import_node)
+
+v1 = IfVisitor()
+v1.visit(tree)
+t1 = IfTransformer(v1.ifs)
+t1.visit(tree)
+
 
 ast.fix_missing_locations(tree)
 
