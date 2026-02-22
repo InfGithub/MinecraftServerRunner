@@ -45,15 +45,21 @@ python start.py
         "XX_TieredCompilation": true,
         "XX_UseCompressedOops": true,
         "XX_UseCompressedClassPointers": true
+    },
+    "backup_settings": {
+        "enable": false, // 是否启用备份功能
+        "backup_time": ["04:00:00"], // 备份计划任务时间列表
+        "backup_max": 5, // 最大备份数量
+        "backup_path": "backup/" // 备份路径
     }
 }
 ```
 
 ## 环境配置
 
--   无需额外安装依赖包
--   使用标准库模块
 -   Python 版本>=3.12
+-   可选的依赖包 `schedule` 用于计划任务
+-   在终端运行 `pip install schedule` 进行安装
 
 ## 程序特点
 
@@ -62,6 +68,7 @@ python start.py
 -   程序内配置
 -   可自动 JVM 调优
 -   环境兼容性检测
+-   计划任务-自动备份功能
 
 ## 高级功能
 
@@ -70,7 +77,6 @@ python start.py
     -   内存优化参数
     -   性能调优选项
 -   **跨平台支持**: Windows & Linux
--   **强制模式**: 绕过版本检测强制运行
 
 ## 参与贡献
 

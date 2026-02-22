@@ -1,7 +1,8 @@
 from typing import Any, Literal, Callable, Unpack
 from util import Config, Color, colorize, ColorArgs
+from ast import literal_eval
 
-type InputSetAllowedType = Literal["int", "str", "bool"]
+type InputSetAllowedType = Literal["int", "str", "bool", "list"]
 
 # ----------------------------------------------------------------
 
@@ -196,6 +197,8 @@ class InputSet(Page):
 			tips.append(f"按下Ctrl+C退出此页面。")
 		if self.data_type == "bool":
 			tips.append(f"输入y/n来指定布尔值。")
+		if self.data_type == "list":
+			tips.append(f"输入列表字面量以解析。示例：['hello', 123, True]")
 		if not self.current_value_key is None:
 			tips.append(f"当前值：{self.config[self.current_value_key]}")
 		if not self.default is None:
@@ -259,6 +262,18 @@ class InputSet(Page):
 
 				is_yeah: bool = char == "y"
 				value: bool = is_yeah
+			elif self.data_type == "list":
+				try:
+					value: list = literal_eval(result)
+				except Exception as err:
+					self.print(f"异常：{err}")
+					self.line()
+					continue
+
+				if not isinstance(value, list):
+					self.print(f"异常：数据内容错误，应为{list}字面量。", is_error=True)
+					self.line()
+					continue
 
 			self.config.set(self.config_key, value)
 			self.print(f"修改成功，已退出此页面。")
@@ -267,6 +282,9 @@ class InputSet(Page):
 			if self.complete_call_function:
 				self.complete_call_function()
 			return
+
+
+# ----------------------------------------------------------------
 
 class InfoList(Page):
 	def __init__(
