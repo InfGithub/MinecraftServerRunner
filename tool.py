@@ -22,7 +22,7 @@ vasts: list[str] = caches + [
     "moonlight-global-datapacks/",
     "patchouli_books/",
     "tacz_backup/",
-    "tlm_custom_pack/",
+    # "tlm_custom_pack/", 不能删！这是玩家自定义皮肤
     ".gunsmithlib/",
     ".mixin.out/",
 ]
