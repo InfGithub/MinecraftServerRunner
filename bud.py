@@ -61,6 +61,7 @@ class IfTransformer(ast.NodeTransformer):
 # ----------------------------------------------------------------
 
 files = (
+    "lang.py",
     "util.py",
     "ui.py",
     "kt.py",
