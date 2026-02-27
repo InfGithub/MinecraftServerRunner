@@ -1,5 +1,5 @@
 from typing import Any, Literal, Callable, Unpack
-from util import Config, Color, colorize, ColorArgs
+from util import Config, Color, colorize, ColorArgs, LANG
 from ast import literal_eval
 
 type InputSetAllowedType = Literal["int", "str", "bool", "list"]
@@ -21,7 +21,7 @@ class Page:
 			)
 
 	def do(self):
-		raise NotImplementedError("Unknown Action Function 'do'")
+		raise NotImplementedError(LANG("ui.unknown.method", "do"))
 
 	def line(self, text: str = "-" * 64, **kwargs):
 		print(colorize(text, *self.base_colors), **kwargs)
@@ -81,11 +81,11 @@ class Choose(Page):
 
 		tips: list[str] = list()
 		if self.prompt:
-			tips.append(f"提示：{self.prompt}")
+			tips.append(LANG("ui.text.tip", self.prompt))
 		if self.callback:
-			tips.append(f"按下Ctrl+C退出此页面。")
+			tips.append(LANG("ui.text.tip.exit"))
 		if not self.current_value_key is None:
-			tips.append(f"当前值：{self.config[self.current_value_key]}")
+			tips.append(LANG("ui.text.tip.current", self.config[self.current_value_key]))
 
 		while True:
 			self.print(f"{self.description}")
@@ -101,7 +101,7 @@ class Choose(Page):
 			self.line()
 
 			try:
-				result: str = self.input("输入：")
+				result: str = self.input(LANG("ui.text.input"))
 			except KeyboardInterrupt as err:
 				print()
 
@@ -109,24 +109,24 @@ class Choose(Page):
 					if self.exit_call_function:
 						self.exit_call_function()
 					self.line()
-					self.print(f"已退出此页面。")
+					self.print(LANG("ui.text.exit"))
 					if self.end_line:
 						self.line()
 					return
 				else:
 					self.line()
-					self.print(f"异常：捕获{err}。", is_error=True)
+					self.print(LANG("ui.text.error", err), is_error=True)
 					self.line()
 					continue
 
 			if not result:
-				self.print(f"异常：输入为空。", is_error=True)
+				self.print(LANG("ui.text.empty"), is_error=True)
 				self.line()
 				continue
 
 			if not result.isdigit():
 				self.print(
-					f"异常：数据类型错误，应为{int}类型，取值范围：0 - {self.index_max}。",
+					LANG("ui.text.error.type.value", int, self.index_max),
 					is_error=True
 				)
 				self.line()
@@ -135,7 +135,7 @@ class Choose(Page):
 			value: int = int(result)
 
 			if value > self.index_max:
-				self.print(f"异常：索引溢出，取值范围：0 - {self.index_max}。", is_error=True)
+				self.print(LANG("ui.text.error.index", self.index_max), is_error=True)
 				self.line()
 				continue
 
@@ -151,7 +151,7 @@ class Choose(Page):
 				self.config.set(self.config_key, var)
 				if self.end_line:
 					self.line()
-				self.print(f"修改成功，已退出此页面。")
+				self.print(LANG("ui.text.edit"))
 				self.line()
 				return
 
@@ -192,19 +192,17 @@ class InputSet(Page):
 
 		tips: list[str] = list()
 		if self.prompt:
-			tips.append(f"提示：{self.prompt}")
+			tips.append(LANG("ui.text.tip", self.prompt))
 		if self.callback:
-			tips.append(f"按下Ctrl+C退出此页面。")
+			tips.append(LANG("ui.text.tip.exit"))
 		if self.data_type == "bool":
-			tips.append(f"输入y/n来指定布尔值。")
+			tips.append(LANG("ui.text.tip.bool"))
 		if self.data_type == "list":
-			tips.append(f"输入列表字面量以解析。示例：['hello', 123, True]")
+			tips.append(LANG("ui.text.tip.list"))
 		if not self.current_value_key is None:
-			tips.append(f"当前值：{self.config[self.current_value_key]}")
+			tips.append(LANG("ui.text.tip.current", self.config[self.current_value_key]))
 		if not self.default is None:
-			tips.append(f"输入为空时使用默认值：{self.default}。")
-
-
+			tips.append(LANG("ui.text.tip.default", self.default))
 
 		while True:
 			self.print(f"{self.description}")
@@ -216,7 +214,7 @@ class InputSet(Page):
 				self.line()
 
 			try:
-				result: str = self.input("输入：")
+				result: str = self.input(LANG("ui.text.input"))
 			except KeyboardInterrupt as err:
 				print()
 
@@ -224,18 +222,18 @@ class InputSet(Page):
 					if self.exit_call_function:
 						self.exit_call_function()
 					self.line()
-					self.print(f"已退出此页面。")
+					self.print(LANG("ui.text.exit"))
 					self.line()
 					return
 				else:
 					self.line()
-					self.print(f"异常：捕获{err}。", is_error=True)
+					self.print(LANG("ui.text.error", err), is_error=True)
 					self.line()
 					continue
 
 			if not result:
 				if self.default is None:
-					self.print(f"异常：输入为空。", is_error=True)
+					self.print(LANG("ui.text.errir.empty"), is_error=True)
 					self.line()
 					continue
 				else:
@@ -244,7 +242,7 @@ class InputSet(Page):
 
 			if self.data_type == "int":
 				if not result.lstrip("-").isdigit():
-					self.print(f"异常：数据类型错误，应为{int}类型。", is_error=True)
+					self.print(LANG("ui.text.error.type", int), is_error=True)
 					self.line()
 					continue
 
@@ -256,7 +254,7 @@ class InputSet(Page):
 			elif self.data_type == "bool":
 				char: str = result[0].lower()
 				if not char in {"y", "n"}:
-					self.print(f"异常：数据内容错误，应为y/n。", is_error=True)
+					self.print(LANG("ui.text.error.value.bool"), is_error=True)
 					self.line()
 					continue
 
@@ -266,17 +264,17 @@ class InputSet(Page):
 				try:
 					value: list = literal_eval(result)
 				except Exception as err:
-					self.print(f"异常：{err}")
+					self.print(LANG("ui.text.error", err))
 					self.line()
 					continue
 
 				if not isinstance(value, list):
-					self.print(f"异常：数据内容错误，应为{list}字面量。", is_error=True)
+					self.print(LANG("ui.text.error.value.list", list), is_error=True)
 					self.line()
 					continue
 
 			self.config.set(self.config_key, value)
-			self.print(f"修改成功，已退出此页面。")
+			self.print(LANG("ui.text.edit"))
 			self.line()
 
 			if self.complete_call_function:
@@ -304,7 +302,7 @@ class InfoList(Page):
 		self.call_function: Callable[[], list[str]] = call_function
 		self.complete_call_function: Callable = complete_call_function
 		if enable_exit_prompt:
-			self.texts.insert(0, "按下Ctrl+C以退出，将不会进行操作。")
+			self.texts.insert(0, LANG("ui.text.tip.exit.undo"))
 
 	def do(self):
 		if self.description:
@@ -324,7 +322,7 @@ class InfoList(Page):
 					self.print(item)
 				self.line()
 		try:
-			self.input("按下任意键以继续。")
+			self.input(LANG("ui.text.enter"))
 			self.line()
 			if self.complete_call_function:
 				self.complete_call_function()

@@ -1,9 +1,10 @@
+from util import Config, LANG
+
 from os import remove, path
 from sys import platform
 from shutil import rmtree
 from typing import Literal, Callable
 from subprocess import check_output, CalledProcessError
-from util import Config
 
 caches: list[str] = [
     "__pycache__/",
@@ -58,7 +59,7 @@ def clean(
                 rmtree(name)
             else:
                 remove(name)
-            print_function(f"删除：{name}")
+            print_function(LANG("tool.text.delete", name))
 
         except Exception as e:
             print_function(f"异常：{e}")
@@ -80,9 +81,9 @@ def check_network(encoding: Literal["ascii", "gbk"] = "gbk") -> list[str]:
                 return check_output("ip addr", shell=True, text=True).splitlines()
 
     except CalledProcessError as e:
-        return [f"执行命令失败: {e}"]
+        return [LANG("tool.text.error.run", e)]
     except Exception as e:
-        return [f"获取网络信息出错: {e}"]
+        return [LANG("tool.text.error.info", e)]
 
 def write_eula():
     try:

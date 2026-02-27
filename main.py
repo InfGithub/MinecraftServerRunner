@@ -1,26 +1,15 @@
+from util import LANG, server_config, running_config
 from ui import InfoList, Choose, InputSet, Page
-from util import Config
 from core import (
-    loaders, default_server_config,
-    default_running_config, jvm_args_info,
+    loaders, default_running_config, jvm_args_info,
     title, get_env, generate_auto_jvm_args,
-    ServerConfigType, RunningType, ServerStream
+    ServerStream
 )
 from tool import clean, check_network, write_eula, load_properties, save_properties
 
 # ----------------------------------------------------------------
 
 default_running_config["properties"] = load_properties()
-
-# ----------------------------------------------------------------
-
-server_config: Config[ServerConfigType] = Config[ServerConfigType].load_from(
-    file_path="config.json", default=default_server_config
-)
-
-running_config: Config[RunningType] = Config[RunningType](
-    data=default_running_config
-)
 
 # ----------------------------------------------------------------
 
@@ -45,7 +34,7 @@ def save_cfg():
 # ----------------------------------------------------------------
 
 run_server_ui: InfoList = InfoList(
-    description="再次按下任意键，以启动服务器。",
+    description=LANG("main.text.run.server.desc"),
     enable_exit_prompt=True,
     complete_call_function=run_server
 )
@@ -53,8 +42,8 @@ run_server_ui: InfoList = InfoList(
 # ----------------------------------------------------------------
 
 multi_run_server_ui: InputSet = InputSet(
-    description="请输入重启次数。",
-    prompt="输入负值可无限循环。",
+    description=LANG("main.text.multi.run.server.desc"),
+    prompt=LANG("main.text.multi.run.server.prompt"),
     config=running_config,
     config_key="reboot_time",
     data_type="int",
@@ -65,7 +54,7 @@ multi_run_server_ui: InputSet = InputSet(
 # ----------------------------------------------------------------
 
 jvm_args_config_ui_list: list[Page] = [InfoList(
-    description="确定生成JVM参数吗？",
+    description=LANG("main.text.jvm.args.config.list.desc"),
     enable_exit_prompt=True,
     complete_call_function=replace_jvm_args_config_auto
 )]
@@ -81,7 +70,7 @@ for key, value in jvm_args_info.items():
                 data=value["data"],
                 config=server_config["jvm_args"],
                 config_key=key,
-                prompt=f"建议值：{value["default"]}"
+                prompt=LANG("main.text.jvm.args.config.list.prompt", value["default"])
             )
         )
     else:
@@ -89,7 +78,7 @@ for key, value in jvm_args_info.items():
         if "prompt" in value:
             prompt.append(value["prompt"])
         if "default" in value:
-            prompt.append(f"建议值：{value["default"]}")
+            prompt.append(LANG("main.text.jvm.args.config.list.prompt", value["default"]))
         jvm_args_config_ui_list.append(
             InputSet(
                 description=value["desc"],
@@ -105,53 +94,53 @@ key_max_length: int = max([len(key) for key in jvm_args_info.keys()])
 # ----------------------------------------------------------------
 
 jvm_args_config_ui_text_list: list[str] = [
-    "自动生成适宜的JVM参数",
+    LANG("main.text.jvm.args.config.text.list.desc"),
     *[f"{key} {"." * (key_max_length - len(key) + 6)} {value["desc"]}" for key, value in jvm_args_info.items()]
 ]
 
 # ----------------------------------------------------------------
 
 jvm_args_config_ui: Choose = Choose(
-    description="请选择将要修改的参数。",
+    description=LANG("main.text.jvm.args.config.desc"),
     text=jvm_args_config_ui_text_list,
     data=jvm_args_config_ui_list
 )
 
 # ----------------------------------------------------------------
 
-properties_config_ui: Choose = Choose(
-    description="请选择将要修改的配置。",
+backup_config_ui: Choose = Choose(
+    description=LANG("main.text.backup.config.desc"),
     text=[
-        "配置启用备份功能",
-        "配置备份时间列表",
-        "配置最大备份数量",
-        "配置备份文件目录"
+        LANG("main.text.backup.config.text1"),
+        LANG("main.text.backup.config.text2"),
+        LANG("main.text.backup.config.text3"),
+        LANG("main.text.backup.config.text4")
     ],
     data=[
         InputSet(
-            description="配置启用备份功能",
+            description=LANG("main.text.backup.config.text1"),
             config=server_config["backup_settings"],
             config_key="enable",
             data_type="bool"
         ),
         InputSet(
-            description="配置备份时间列表",
+            description=LANG("main.text.backup.config.text2"),
             config=server_config["backup_settings"],
             config_key="backup_time",
             data_type="list"
         ),
         InputSet(
-            description="配置最大备份数量",
+            description=LANG("main.text.backup.config.text3"),
             config=server_config["backup_settings"],
             config_key="backup_max",
             data_type="int"
         ),
         InputSet(
-            description="配置备份文件目录",
+            description=LANG("main.text.backup.config.text4"),
             config=server_config["backup_settings"],
             config_key="backup_path",
             data_type="str",
-            prompt="示例：backup/"
+            prompt=LANG("main.text.backup.config.text4.prompt")
         )
     ]
 )
@@ -160,53 +149,60 @@ properties_config_ui: Choose = Choose(
 
 config_ui: Choose = Choose(
     text=[
-        "设置初始堆内存大小", "设置最大堆内存大小", "设置核心文件名称", "设置模组加载器",
-        "设置游戏版本", "配置JDK绝对路径", "配置重启等待时间", "配置高级JVM参数",
-        "配置备份计划任务"
+        LANG("main.text.config.text1"),
+        LANG("main.text.config.text2"),
+        LANG("main.text.config.text3"),
+        LANG("main.text.config.text4"),
+        LANG("main.text.config.text5"),
+        LANG("main.text.config.text6"),
+        LANG("main.text.config.text7"),
+        LANG("main.text.config.text8"),
+        LANG("main.text.config.text9"),
     ],
     data=[
         InputSet(
-            description="配置初始堆内存大小（GB）", config=server_config,
+            description=LANG("main.text.backup.config.text1"), config=server_config,
             config_key="min_memory", data_type="int"
         ),
         InputSet(
-            description="配置最大堆内存大小（GB）", config=server_config,
+            description=LANG("main.text.backup.config.text2"), config=server_config,
             config_key="max_memory", data_type="int"
         ),
         InputSet(
-            description="配置核心文件名称", prompt="请注意输入文件拓展名：.jar",
+            description=LANG("main.text.backup.config.text3"),
+            prompt=LANG("main.text.backup.config.text3.prompt"),
             config=server_config, config_key="jar_name",
             data_type="str"
         ),
         Choose(
-            description="配置模组加载器", text=loaders, data=loaders,
+            description=LANG("main.text.backup.config.text4"), text=loaders, data=loaders,
             config=server_config, config_key="loader", end_line=False,
             value_mapping=dict(enumerate(loaders))
         ),
         InputSet(
-            description="配置游戏版本", config=server_config,
+            description=LANG("main.text.backup.config.text5"), config=server_config,
             config_key="version", data_type="str"
         ),
         InputSet(
-            description="配置JDK绝对路径",
-            prompt="请注意输入完整的绝对路径。\n示例：C:/Program Files/Zulu/zulu-17",
+            description=LANG("main.text.backup.config.text6"),
+            prompt=LANG("main.text.backup.config.text6.prompt"),
             config=server_config, config_key="jdk_path",
             data_type="str", default="java"
         ),
         InputSet(
-            description="配置重启等待时间（秒）", config=server_config,
+            description=LANG("main.text.backup.config.text7"), config=server_config,
             config_key="reboot_seconds", data_type="int"
         ),
         jvm_args_config_ui,
-        properties_config_ui
+        backup_config_ui
     ],
-    description="请选择将要修改的配置。"
+    description=LANG("main.text.config.desc")
 )
 
 # ----------------------------------------------------------------
 
 env_ui: InfoList = InfoList(
-    description="运行环境信息。",
+    description=LANG("main.text.env.desc"),
     call_function=lambda: get_env(
         server_config.data,
         running_config.data
@@ -214,8 +210,8 @@ env_ui: InfoList = InfoList(
 )
 
 clean_ui: InputSet = InputSet(
-    description="选择清理等级",
-    prompt="[0] 日志+缓存 [1] 日志+临时数据 [2] 重置",
+    description=LANG("main.text.clean.desc"),
+    prompt=LANG("main.text.clean.prompt"),
     config=running_config,
     config_key="clean_type",
     data_type="int",
@@ -229,14 +225,14 @@ clean_ui.complete_call_function = lambda: clean(
 )
 
 net_ui: InfoList = InfoList(
-    description="网络信息",
+    description=LANG("main.text.net.desc"),
     call_function=lambda: check_network(),
     base_color="magenta"
 )
 
 eula_ui: InfoList = InfoList(
-    description="再次按下任意键，以修改eula.txt。",
-    texts=["继续前，请先阅读并同意此协议：https://aka.ms/MinecraftEULA"],
+    description=LANG("main.text.eula.desc"),
+    texts=[LANG("main.text.eula.text", "https://aka.ms/MinecraftEULA")],
     enable_exit_prompt=True,
 )
 eula_ui.complete_call_function=write_eula
@@ -244,12 +240,12 @@ eula_ui.complete_call_function=write_eula
 # ----------------------------------------------------------------
 
 tool_ui: Choose = Choose(
-    description="选择要执行的功能",
+    description=LANG("main.text.tool.desc"),
     text=[
-        "检测运行环境",
-        "清理文件数据",
-        "查看网络信息",
-        "修改EULA协议"
+        LANG("main.text.tool.text1"),
+        LANG("main.text.tool.text2"),
+        LANG("main.text.tool.text3"),
+        LANG("main.text.tool.text4"),
     ],
     data=[
         env_ui,
@@ -277,10 +273,10 @@ if __name__ == "__main__":
 
     Choose(
         text=[
-            "启动服务器",
-            "启动服务器（自动重启）",
-            "修改配置",
-            "其他工具"
+            LANG("main.text.ui.text1"),
+            LANG("main.text.ui.text2"),
+            LANG("main.text.ui.text3"),
+            LANG("main.text.ui.text4"),
         ],
         data=[
             run_server_ui,
@@ -288,7 +284,7 @@ if __name__ == "__main__":
             config_ui,
             tool_ui
         ],
-        description="请选择将要使用的功能。",
+        description=LANG("main.text.ui.desc"),
         base_color="blue",
         exit_call_function=save_cfg
     ).do()

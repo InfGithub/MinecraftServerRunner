@@ -1,11 +1,14 @@
+from util import (
+    ColorArgs, Config, ServerConfigType, RunningType, JVMArgsType, BackupSettings,
+    LANG, default_running_config, default_server_config
+)
 from ui import Page, InfoList
-from util import ColorArgs, Config
 from kt import KillableThread
 
 from os import path, environ, listdir, system, mkdir, remove
 from sys import stdout, stderr, stdin, platform
 from time import sleep, strftime
-from typing import Unpack, TypedDict, Literal
+from typing import Unpack, Literal
 from shutil import which
 from threading import Thread, Event
 from subprocess import Popen, PIPE
@@ -21,88 +24,45 @@ if platform == "win32":
 
 # ----------------------------------------------------------------
 
-class JVMArgsType(TypedDict, total=False):
-    Xmn: int
-    server: bool
-    XX_UseG1GC: bool
-    XX_MaxGCPauseMillis: int
-    XX_G1HeapRegionSize: int
-    XX_MetaspaceSize: int
-    XX_MaxMetaspaceSize: int
-    XX_UseZGC: bool
-    XX_UseShenandoahGC: bool
-    XX_DisableExplicitGC: bool
-    XX_UseStringDeduplication: bool
-    XX_AlwaysPreTouch: bool
-    XX_ParallelRefProcEnabled: bool
-    XX_UnlockExperimentalVMOptions: bool
-    XX_UseLargePages: bool
-    XX_UseTransparentHugePages: bool
-    XX_TieredCompilation: bool
-    XX_OptimizeStringConcat: bool
-    XX_UseCodeCacheFlushing: bool
-    XX_PerfDisableSharedMem: bool
-    XX_UseBiasedLocking: bool
-    XX_UseCompressedOops: bool
-    XX_UseCompressedClassPointers: bool
-
-class BackupSettings(TypedDict):
-    enable: bool
-    backup_time: list[str]
-    backup_max: int
-    backup_path: str
-
-class ServerConfigType(TypedDict):
-    min_memory: int
-    max_memory: int
-    jar_name: str
-    version: str
-    loader: Literal["Vanilla", "Fabric", "Forge", "NeoForge", "Quilt"]
-    jdk_path: str
-    reboot_seconds: int
-    jvm_args: JVMArgsType
-    backup_settings: BackupSettings
-
-class RunningType(TypedDict):
-    reboot_time: int
-    schedule_installed: bool
-    properties: dict
-
-# ----------------------------------------------------------------
-
 loaders: list[str] = ["Vanilla", "Fabric", "Forge", "NeoForge", "Quilt"]
 
-default_server_config: ServerConfigType = {
-    "jdk_path": "java",
-    "jar_name": "server.jar",
-    "min_memory": 4,
-    "max_memory": 4,
-    "loader": "Fabric",
-    "version": "1.20.1",
-    "reboot_seconds": 10,
-    "jvm_args": Config[JVMArgsType]({
-        "server": True,
-        "XX_UseG1GC": True,
-        "XX_DisableExplicitGC": True,
-        "XX_AlwaysPreTouch": True,
-        "XX_ParallelRefProcEnabled": True,
-        "XX_UseStringDeduplication": True,
-        "XX_UnlockExperimentalVMOptions": True,
-        "XX_TieredCompilation": True,
-        "XX_UseCompressedOops": True,
-        "XX_UseCompressedClassPointers": True
-    }),
-    "backup_settings": Config[JVMArgsType]({
-        "enable": False,
-        "backup_time": ["04:00:00"],
-        "backup_max": 5,
-        "backup_path": "backup/"
-    })
+jvm_args_info: dict[str, dict] = {
+    "Xmn": {"type": "int", "desc": LANG("core.jvm.args.info.Xmn")},
+    "server": {"type": "bool", "desc": LANG("core.jvm.args.info.server")},
+    "XX_UseG1GC": {"type": "bool", "desc": LANG("core.jvm.args.info.XX_UseG1GC")},
+    "XX_MaxGCPauseMillis": {
+        "type": "int", "desc": LANG("core.jvm.args.info.XX_MaxGCPauseMillis"),
+        "prompt": LANG("core.jvm.args.info.XX_MaxGCPauseMillis.range"), "default": 130
+    },
+    "XX_G1HeapRegionSize": {
+        "type": "choose", "desc": LANG("core.jvm.args.info.XX_G1HeapRegionSize"),
+        "data": [1, 2, 4, 8, 16, 32], "default": 16
+    },
+    "XX_MetaspaceSize": {"type": "int", "desc": LANG("core.jvm.args.info.XX_MetaspaceSize"), "default": 256},
+    "XX_MaxMetaspaceSize": {"type": "int", "desc": LANG("core.jvm.args.info.XX_MaxMetaspaceSize"), "default": 512},
+    "XX_UseZGC": {"type": "bool", "desc": LANG("core.jvm.args.info.XX_UseZGC")},
+    "XX_UseShenandoahGC": {"type": "bool", "desc": LANG("core.jvm.args.info.XX_UseShenandoahGC")},
+    "XX_DisableExplicitGC": {"type": "bool", "desc": LANG("core.jvm.args.info.XX_DisableExplicitGC")},
+    "XX_UseStringDeduplication": {"type": "bool", "desc": LANG("core.jvm.args.info.XX_UseStringDeduplication")},
+    "XX_AlwaysPreTouch": {"type": "bool", "desc": LANG("core.jvm.args.info.XX_AlwaysPreTouch")},
+    "XX_ParallelRefProcEnabled": {"type": "bool", "desc": LANG("core.jvm.args.info.XX_ParallelRefProcEnabled")},
+    "XX_UnlockExperimentalVMOptions": {
+        "type": "bool", "desc": LANG("core.jvm.args.info.XX_UnlockExperimentalVMOptions")
+    },
+    "XX_UseLargePages": {"type": "bool", "desc": LANG("core.jvm.args.info.XX_UseLargePages")},
+    "XX_UseTransparentHugePages": {"type": "bool", "desc": LANG("core.jvm.args.info.XX_UseTransparentHugePages")},
+    "XX_TieredCompilation": {"type": "bool", "desc": LANG("core.jvm.args.info.XX_TieredCompilation")},
+    "XX_OptimizeStringConcat": {"type": "bool", "desc": LANG("core.jvm.args.info.XX_OptimizeStringConcat")},
+    "XX_UseCodeCacheFlushing": {"type": "bool", "desc": LANG("core.jvm.args.info.XX_UseCodeCacheFlushing")},
+    "XX_PerfDisableSharedMem": {"type": "bool", "desc": LANG("core.jvm.args.info.XX_PerfDisableSharedMem")},
+    "XX_UseBiasedLocking": {"type": "bool", "desc": LANG("core.jvm.args.info.XX_UseBiasedLocking")},
+    "XX_UseCompressedOops": {"type": "bool", "desc": LANG("core.jvm.args.info.XX_UseCompressedOops")},
+    "XX_UseCompressedClassPointers": {
+        "type": "bool", "desc": LANG("core.jvm.args.info.XX_UseCompressedClassPointers")
+    }
 }
 
-default_running_config: RunningType = {
-    "reboot_time": 1
-}
+# ----------------------------------------------------------------
 
 try:
     from schedule import run_pending, every
@@ -111,32 +71,6 @@ try:
 
 except ImportError:
     default_running_config["schedule_installed"] = False
-
-jvm_args_info: dict[str, dict] = {
-    "Xmn": {"type": "int", "desc": "新生代内存大小（GB）"},
-    "server": {"type": "bool", "desc": "服务器模式JIT"},
-    "XX_UseG1GC": {"type": "bool", "desc": "G1垃圾回收器"},
-    "XX_MaxGCPauseMillis": {"type": "int", "desc": "最大GC暂停时间", "prompt": "取值范围：50~1000", "default": 130},
-    "XX_G1HeapRegionSize": {"type": "choose", "desc": "G1堆区域大小", "data": [1, 2, 4, 8, 16, 32], "default": 16},
-    "XX_MetaspaceSize": {"type": "int", "desc": "元空间初始大小", "default": 256},
-    "XX_MaxMetaspaceSize": {"type": "int", "desc": "元空间最大大小", "default": 512},
-    "XX_UseZGC": {"type": "bool", "desc": "ZGC垃圾回收器"},
-    "XX_UseShenandoahGC": {"type": "bool", "desc": "Shenandoah垃圾回收器"},
-    "XX_DisableExplicitGC": {"type": "bool", "desc": "禁用System.gc"},
-    "XX_UseStringDeduplication": {"type": "bool", "desc": "字符串去重"},
-    "XX_AlwaysPreTouch": {"type": "bool", "desc": "预分配内存"},
-    "XX_ParallelRefProcEnabled": {"type": "bool", "desc": "并行引用处理"},
-    "XX_UnlockExperimentalVMOptions": {"type": "bool", "desc": "解锁实验性选项"},
-    "XX_UseLargePages": {"type": "bool", "desc": "使用大页内存"},
-    "XX_UseTransparentHugePages": {"type": "bool", "desc": "透明大页"},
-    "XX_TieredCompilation": {"type": "bool", "desc": "分层编译"},
-    "XX_OptimizeStringConcat": {"type": "bool", "desc": "优化字符串连接"},
-    "XX_UseCodeCacheFlushing": {"type": "bool", "desc": "代码缓存清理"},
-    "XX_PerfDisableSharedMem": {"type": "bool", "desc": "禁用性能共享内存"},
-    "XX_UseBiasedLocking": {"type": "bool", "desc": "偏向锁"},
-    "XX_UseCompressedOops": {"type": "bool", "desc": "压缩普通对象指针"},
-    "XX_UseCompressedClassPointers": {"type": "bool", "desc": "压缩类指针"},
-}
 
 # ----------------------------------------------------------------
 
@@ -187,13 +121,13 @@ def check_jdk_version(server_data: ServerConfigType) -> str:
 
     text: str = None
     if not ((1, 9, 0) > jdk_version >= (1, 8, 0)) and ((1, 16, 5) >= version):
-        text: str = "JDK应为1.8.x版本。"
+        text: str = LANG("core.text.error.jdk.version.tip", "1.8.x")
     if not ((12, 0, 0) > jdk_version >= (11, 0, 0)) and ((1, 17, 1) >= version >= (1, 13, 0)):
-        text: str = "JDK应为1.11.x版本。"
+        text: str = LANG("core.text.error.jdk.version.tip", "11.x.x")
     if not ((18, 0, 0) > jdk_version >= (17, 0, 0)) and ((1, 20, 4) >= version >= (1, 17, 0)):
-        text: str = "JDK应为1.17.x版本。"
+        text: str = LANG("core.text.error.jdk.version.tip", "17.x.x")
     if not ((22, 0, 0) > jdk_version >= (21, 0, 0)) and (version >= (1, 20, 5)):
-        text: str = "JDK应为1.21.x版本。"
+        text: str = LANG("core.text.error.jdk.version.tip", "21.x.x")
 
     return text
 
@@ -218,7 +152,7 @@ def get_env(server_data: ServerConfigType, running_data: RunningType) -> list[st
     if err:
         result.append(err.strip())
     if not running_data:
-        result.append("'schedule'模块未安装，建议运行 'pip install schedule' 命令以使用备份功能。")
+        result.append(LANG("core.text.tip.module.schedule.missing"))
 
     return result
 
@@ -318,7 +252,7 @@ class ServerStream(Page):
     def do(self):
         text: str = check_jdk_version(self.server_cf_data)
         if text:
-            InfoList(description="⚠JDK版本异常警告", texts=[text])
+            InfoList(description="core.text.error.jdk.version", texts=[text])
 
         command_args: list[str] = self.generate_command()
 
@@ -343,9 +277,9 @@ class ServerStream(Page):
                 bufsize=1,
                 universal_newlines=True
             )
-
-            self.print(f"启动命令：{" ".join(command_args)}")
-            self.print(f"服务器已启动，进程PID：{process.pid}")
+            
+            self.print(LANG("core.text.run.command", " ".join(command_args)))
+            self.print(LANG("core.text.start.pid", process.pid))
 
             self.line()
             Thread(
@@ -369,7 +303,7 @@ class ServerStream(Page):
                 process.wait(timeout=10)
 
             self.line()
-            self.print(f"服务器已关闭，返回代码：{process.returncode}") # 此处不换行有特殊逻辑，正常
+            self.print(LANG("core.text.stop.code", process.returncode)) # 此处不换行有特殊逻辑，正常
 
             self.line()
             self.check_return_code(process.returncode)
@@ -389,7 +323,7 @@ class ServerStream(Page):
             self.line()
             try:
                 for sec in range(self.server_cf_data["reboot_seconds"], 0, -1):
-                    self.print(f"重启倒计时：{sec}s")
+                    self.print(LANG("core.text.reboot.ticks", sec))
                     sleep(1)
 
             except KeyboardInterrupt:
@@ -419,7 +353,7 @@ class ServerStream(Page):
             std_error: str = proc.stderr.readline()
 
             if std_error:
-                self.print(f"[ERROR] {std_error}", end="", is_error=True)
+                self.print(std_error, end="", is_error=True)
 
     def input_stream(self, proc: Popen[str]):
         while proc.poll() is None:
@@ -521,7 +455,7 @@ class ServerStream(Page):
         proc.wait()
 
         self.backup() # 备份操作
-        self.print("备份已完成。")
+        self.print(LANG("core.text.backup.complete"))
         self.line()
 
         self.backup_event.set()
@@ -534,7 +468,7 @@ class ServerStream(Page):
             try:
                 every().day.at(backup_time).do(lambda: self.backup_at_running(proc))
             except Exception as err:
-                self.print(f"⚠ 备份时间格式错误：{backup_time}，应为 HH:MM 或 HH:MM:SS")
+                self.print(LANG("core.text.error.backup.format", backup_time))
                 self.line()
                 return
 
@@ -556,10 +490,10 @@ class ServerStream(Page):
             file_path: str = path.join(backup_settings["backup_path"], files[0])
             try:
                 remove(file_path)
-                self.print(f"已删除文件：{file_path}")
+                self.print(LANG("core.text.delete.file", file_path))
                 self.line()
             except Exception as e:
-                self.print(f"异常：{e}")
+                self.print(LANG("ui.text.error", e))
 
         try:
             with taropen(
@@ -571,5 +505,5 @@ class ServerStream(Page):
             ) as f:
                 f.add(world_name, arcname=world_name)
         except Exception as e:
-            self.print(f"异常：{e}")
+            self.print(LANG("ui.text.error", e))
             self.line()
