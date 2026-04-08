@@ -1,6 +1,7 @@
 from typing import Any, Literal, TypedDict, TypeVar, Dict, Generic
 from json import dumps, loads, JSONDecodeError
 from lang import Lang, LanguageID
+from logger import Logger
 
 T = TypeVar("T", bound=Dict[str, Any])
 
@@ -236,3 +237,7 @@ running_config: Config[RunningType] = Config[RunningType](
 LANG: Language = Language(server_config["language"])
 
 # ----------------------------------------------------------------
+
+logger: Logger = Logger(
+    level="DEBUG"
+)

@@ -21,3 +21,4 @@ whitelist.json
 start.py
 test.json
 backup/
+venv/

@@ -233,7 +233,7 @@ class InputSet(Page):
 
 			if not result:
 				if self.default is None:
-					self.print(LANG("ui.text.errir.empty"), is_error=True)
+					self.print(LANG("ui.text.error.empty"), is_error=True)
 					self.line()
 					continue
 				else:

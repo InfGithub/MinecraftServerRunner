@@ -51,15 +51,19 @@ class KillableThread(Thread):
         kernel32.WriteConsoleInputW(h_stdin, byref(event), 1, byref(written))
 
     def RAISE_E(self, exc: BaseException):
-        self.WIN_UNBLOCK()
-
         pythonapi.PyThreadState_SetAsyncExc(
             c_long(self.ident),
             py_object(exc)
         )
+        self.WIN_UNBLOCK()
 
     def UNIX_KILL(self):
         kill(self.ident, SIGINT)
+        try:
+            with open('/dev/stdin', 'wb') as f:
+                f.write(b'\n')
+        except:
+            pass
 
     def KILLLL(self, exc: BaseException = SystemExit):
         if not self.is_alive():

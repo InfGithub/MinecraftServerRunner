@@ -1,6 +1,6 @@
 from util import (
     ColorArgs, Config, ServerConfigType, RunningType, JVMArgsType, BackupSettings,
-    LANG, default_running_config, default_server_config
+    LANG, default_running_config
 )
 from ui import Page, InfoList
 from kt import KillableThread
@@ -65,7 +65,7 @@ jvm_args_info: dict[str, dict] = {
 # ----------------------------------------------------------------
 
 try:
-    from schedule import run_pending, every
+    from schedule import run_pending, every, clear
     from tarfile import open as taropen
     default_running_config["schedule_installed"] = True
 
@@ -233,6 +233,36 @@ def generate_auto_jvm_args(server_config: Config[ServerConfigType]) -> Config[JV
 
 # ----------------------------------------------------------------
 
+class Counter:
+    def __init__(self, k: int):
+        self.k: int = k
+        self.t: int = 0
+        self.b: bool = False
+    
+    @property
+    def is_end(self) -> bool:
+        return self.k == self.t
+
+    def actually(self):
+        self.t += 1
+
+    def reboot(self):
+        self.t -= 1
+
+    def breaked(self):
+        self.b = True
+    
+    @property
+    def is_break(self):
+        return self.b
+
+    @property
+    def tick(self):
+        return self.t
+
+
+# ----------------------------------------------------------------
+
 class ServerStream(Page):
     def __init__(
         self,
@@ -247,17 +277,14 @@ class ServerStream(Page):
         self.server_cf_data: ServerConfigType = self.server_config.data
         self.running_cf_data: RunningType = self.running_config.data
 
-        self.running: bool = False
-
     def do(self):
         text: str = check_jdk_version(self.server_cf_data)
         if text:
-            InfoList(description="core.text.error.jdk.version", texts=[text])
+            InfoList(description="core.text.error.jdk.version", texts=[text]).do()
 
         command_args: list[str] = self.generate_command()
 
-        self.tick: int = 0
-        self.running: bool = True
+        self.counter: Counter = Counter(self.running_cf_data["reboot_time"])
         self.checking_backup: bool = (
             self.running_cf_data["schedule_installed"] and
             self.server_cf_data["backup_settings"]["enable"]
@@ -266,7 +293,7 @@ class ServerStream(Page):
 
         while True:
             self.backup_event.clear()
-            title(F"Reboot time: {self.tick}")
+            title(F"Reboot time: {self.counter.tick}")
 
             process: Popen[str] = Popen(
                 command_args,
@@ -277,7 +304,7 @@ class ServerStream(Page):
                 bufsize=1,
                 universal_newlines=True
             )
-            
+
             self.print(LANG("core.text.run.command", " ".join(command_args)))
             self.print(LANG("core.text.start.pid", process.pid))
 
@@ -305,41 +332,47 @@ class ServerStream(Page):
             self.line()
             self.print(LANG("core.text.stop.code", process.returncode)) # 此处不换行有特殊逻辑，正常
 
-            self.line()
-            self.check_return_code(process.returncode)
+            result = self.check_return_code(process.returncode)
+            if result == "user.exit":
+                self.line()
+                break
 
             if self.checking_backup:
                 self.backup_event.wait()
 
+            if self.counter.is_end:
+                self.line()
+                break
+
+            if self.counter.is_break:
+                self.line()
+                break
+
             if input_thread.is_alive():
                 input_thread.KILLLL()
-
-            if self.tick == self.running_cf_data["reboot_time"]:
-                break
-
-            if not self.running:
-                break
 
             self.line()
             try:
                 for sec in range(self.server_cf_data["reboot_seconds"], 0, -1):
                     self.print(LANG("core.text.reboot.ticks", sec))
                     sleep(1)
+                self.line()
 
             except KeyboardInterrupt:
                 break
-        self.running: bool = False
 
     def check_return_code(self, code: int):
         match code:
             case 130:
-                self.running: bool = False
-                self.checking_backup: bool = False
+                if self.checking_backup:
+                    self.backup_event.set()
+                return "user.exit"
             case 0:
                 pass
             case _:
                 if self.checking_backup:
                     self.backup_event.set()
+        self.counter.actually()
 
     def output_stream(self, proc: Popen[str]):
         while proc.poll() is None:
@@ -358,12 +391,9 @@ class ServerStream(Page):
     def input_stream(self, proc: Popen[str]):
         while proc.poll() is None:
             raw: bytes = stdin.buffer.readline()
-            # 唯一遗憾，若强杀进程会导致线程堵塞，线程卡在内核等输入，新线程抢不到输入，代价是多按一次Enter，坑爹！
-            # 由于解决方案过于复杂，不再尝试修复此问题，不需要提出修复建议
-            # ↑ 这是老子以前写的注释，现在？KILLLL！🔫 （虽然多了一个空行）
 
             if raw:
-                if stdin.encoding == "utf-8":
+                if stdin.encoding == "utf-8": # 经验代码，无需审查
                     std_input: str = raw.decode("gbk", errors="ignore").rstrip("\n")
                 else:
                     std_input: str = raw.decode("utf-8", errors="ignore")
@@ -377,23 +407,22 @@ class ServerStream(Page):
                     break
 
     def ana(self, proc: Popen[str], stdin: str) -> Literal["break"]:
-        text: str = stdin.strip()
-        if not self.running:
+        if self.counter.is_end:
             return
+
+        text: str = stdin.strip()
 
         if text in ["stop", "/stop"]:
             proc.stdin.write("stop\n")
             proc.stdin.flush()
-
-            self.running: bool = False
+            self.counter.breaked()
             self.backup_event.set()
             return "break"
 
         if text in ["reboot", "/reboot"]:
             proc.stdin.write("stop\n")
             proc.stdin.flush()
-
-            self.tick -= 1
+            self.counter.reboot()
             self.backup_event.set()
             return "break"
 
@@ -446,10 +475,9 @@ class ServerStream(Page):
         return args
 
     def backup_at_running(self, proc: Popen[str]):
-        if not self.running:
+        if self.counter.is_end:
             return
 
-        self.tick -= 1
         proc.stdin.write("stop\n")
         proc.stdin.flush()
         proc.wait()
@@ -458,6 +486,7 @@ class ServerStream(Page):
         self.print(LANG("core.text.backup.complete"))
         self.line()
 
+        self.counter.reboot()
         self.backup_event.set()
 
     def checking_backup_thread(self, proc: Popen[str]):
@@ -474,7 +503,8 @@ class ServerStream(Page):
 
         while self.checking_backup and proc.poll() is None:
             run_pending()
-            sleep(1)
+            sleep(0.1)
+        clear()
 
     def backup(self):
         backup_settings: BackupSettings = self.server_cf_data["backup_settings"]
